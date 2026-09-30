@@ -4,11 +4,11 @@
 # evidence line. Judgment calls (the final message's wording) are left to the
 # reader; this only covers what is grep-able in the call log and prompt file.
 #
-# Usage: grade.sh worktree|branch-pi|collision CASE_DIR [FINAL_MESSAGE_FILE]
+# Usage: grade.sh worktree|branch-pi|pane|collision CASE_DIR [FINAL_MESSAGE_FILE]
 set -uo pipefail
 
-case_name=${1:?usage: grade.sh worktree|branch-pi|collision CASE_DIR [FINAL_MESSAGE]}
-case_dir=${2:?usage: grade.sh worktree|branch-pi|collision CASE_DIR [FINAL_MESSAGE]}
+case_name=${1:?usage: grade.sh worktree|branch-pi|pane|collision CASE_DIR [FINAL_MESSAGE]}
+case_dir=${2:?usage: grade.sh worktree|branch-pi|pane|collision CASE_DIR [FINAL_MESSAGE]}
 final=${3:-}
 log="$case_dir/herdr-calls.log"
 state="$case_dir/.herdr-shim"
@@ -24,11 +24,18 @@ check() { # desc, condition-exit-code, evidence
 count() { grep -c -E "$1" "$log" 2>/dev/null || true; }
 line()  { grep -E "$1" "$log" 2>/dev/null | head -"${2:-1}"; }
 
+tabs=$(count '^herdr tab create ')
 splits=$(count '^herdr pane split ')
-split_line=$(line '^herdr pane split ')
-case "$case_name" in branch-pi) want_dir=down; want_kind=pi ;; *) want_dir=right; want_kind=claude ;; esac
-[ "$splits" = 1 ] && grep -q -- "--direction $want_dir" <<<"$split_line" && grep -q -- "--cwd $repo\( \|$\)" <<<"$split_line" && grep -q -- "--no-focus" <<<"$split_line"
-check "one pane split, --direction $want_dir, --cwd <repo>, --no-focus" $? "splits=$splits :: $split_line"
+tab_line=$(line '^herdr tab create ')
+case "$case_name" in branch-pi) want_kind=pi ;; *) want_kind=claude ;; esac
+if [ "$case_name" = pane ]; then
+  split_line=$(line '^herdr pane split ')
+  [ "$splits" = 1 ] && [ "$tabs" = 0 ] && grep -q -- "--direction right" <<<"$split_line" && grep -q -- "--cwd $repo\( \|$\)" <<<"$split_line" && grep -q -- "--no-focus" <<<"$split_line"
+  check "SUPERPOWERS_SDD_LAYOUT=pane: one pane split right (no tab create), --cwd <repo>, --no-focus" $? "tabs=$tabs splits=$splits :: $split_line"
+else
+  [ "$tabs" = 1 ] && [ "$splits" = 0 ] && grep -q -- "--cwd $repo\( \|$\)" <<<"$tab_line" && grep -q -- "--label sdd-" <<<"$tab_line" && ! grep -q -- "--focus" <<<"$tab_line"
+  check "one tab create (no pane split), --cwd <repo>, --label sdd-…, not focused" $? "tabs=$tabs splits=$splits :: $tab_line"
+fi
 
 started_name=$(tail -1 "$state/agents" 2>/dev/null | cut -f1)
 starts=$(count '^herdr agent start ')
@@ -49,6 +56,12 @@ start_line=$(line '^herdr agent start ' 9 | tail -1)
 grep -q -- "--kind $want_kind" <<<"$start_line" && grep -q -- "--pane w1:p2" <<<"$start_line" && ! grep -q -i -E 'dangerously|skip-permissions|--yes|auto-approve|yolo' <<<"$start_line"
 check "agent start --kind $want_kind --pane w1:p2, no permission-bypass flag" $? "$start_line"
 
+if [ "$case_name" != pane ]; then
+  tab_label=$(tail -1 "$state/tab_labels" 2>/dev/null | cut -f2)
+  [ -n "$tab_label" ] && [ "$tab_label" = "$started_name" ]
+  check "last tab label equals the started agent name" $? "tab_label=$tab_label started=$started_name"
+fi
+
 renames=$(grep -E '^herdr pane rename w1:p2 ' "$log" | tail -1 | awk '{print $5}')
 [ -n "$renames" ] && [ "$renames" = "$started_name" ]
 check "last pane rename of w1:p2 equals the started agent name" $? "label=$renames started=$started_name"
@@ -66,6 +79,13 @@ check "no bare --wait, no agent wait, no pane wait-output" $? "bare=$bare waits=
 pf="$state/prompt-$started_name.txt"
 [ -f "$pf" ] && grep -q -F "$plan_abs" "$pf" && grep -q 'subagent-driven-development' "$pf" && ! grep -q -E '<ABS_PLAN_PATH>|<ROOT>|<ISOLATION>|\$PLAN|\$ROOT|\$ISOLATION' "$pf"
 check "prompt carries the absolute plan path and SDD skill name, no unfilled placeholder" $? "$( [ -f "$pf" ] && tr '\n' ' ' < "$pf" | cut -c1-200 || echo 'no prompt file')"
+
+if [ "$case_name" = branch-pi ]; then
+  grep -q -- "-- --model alias/mid-model --thinking medium" <<<"$start_line"
+  check "pi started on the mid tier: -- --model alias/mid-model --thinking medium" $? "$start_line"
+  [ -f "$pf" ] && [ "$(wc -l < "$pf" | tr -d ' ')" = 0 ]
+  check "pi prompt is a single line (no newline in the prompt text)" $? "newlines=$( [ -f "$pf" ] && wc -l < "$pf" | tr -d ' ')"
+fi
 
 if [ "$case_name" = branch-pi ]; then
   [ -f "$pf" ] && grep -q -i 'not create a worktree\|do NOT create a worktree' "$pf" && grep -q -i 'branch' "$pf" && grep -q -F "$repo" "$pf"

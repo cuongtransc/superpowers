@@ -1,5 +1,26 @@
 # Superpowers Release Notes
 
+## v6.4.24 (2026-09-30)
+
+First release of the cuongtransc/superpowers fork, maintained separately from cuongnbms/superpowers from here on. Base: cuongnbms `main` = v6.4.23. Upstream changes from cuongnbms and obra are ported by hand after a test run.
+
+### Subagent-Driven Development
+
+- `task-brief` matches the task number whole (cherry-picked from cuongnbms `dev` 167acb0; upstream obra/superpowers#2175, #2405): "Task 6" no longer pulls in "Task 6b" or "Task 6.1", a plan with only "Task 8b" no longer answers a request for 8, and "." no longer matches every task. Verified: the three new cases in `tests/claude-code/test-task-brief.sh` fail on v6.4.23 and pass with the fix (16/16); `test-sdd-workspace.sh` 24/24, `test-executing-plans-scripts.sh` 10/10, `test-worktree-path-policy.sh` 9/9; shellcheck clean.
+- Not taken: cuongnbms `dev` e5b9fc4 (SKILL.md trimmed under 500 lines, dry-run eval only); left for a later release.
+
+### SDD In New Session
+
+Fork-only. Motivating observation (2026-09-30, a real handoff of two plans): each worker opened as a split of the orchestrating session's pane, so two workers and the orchestrator shared one screen; the user asked for tabs. The same run showed two pi-only failures: a multi-line prompt sat in pi's input unsubmitted (`agent_prompt_stalled`), and pi started on `xai/grok-4.7` although its settings default was `alias/main`.
+
+### SDD In New Session
+
+- **A new named tab per worker, not a pane split.** `herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$CWD" --label "$NAME"` replaces the layout probe and `pane split`; the root pane is still renamed to the agent name, and a name collision renames both the tab and the pane. The tab opens unfocused, so the user's view stays on the orchestrator.
+- **Layout is configurable**: `--tab` / `--pane` per call, else `$SUPERPOWERS_SDD_LAYOUT`, else `tab`. `pane` keeps the previous behavior (layout probe, split right or down). Tab is the default because several long-running workers are the common case; a split suits one short worker watched beside the orchestrator.
+- **pi starts on the mid tier explicitly**: `herdr agent start … --kind pi -- --model alias/mid-model --thinking medium`, the controller's tier from subagent-driven-development's harness table, instead of whatever model pi comes up on.
+- **pi gets a one-line prompt**: newlines are joined before `agent prompt`, because pi submits on Enter and a multi-line paste stays in its input.
+- Evals: the herdr test double implements `tab create` and `tab rename`; `grade.sh` checks one `tab create` and no `pane split`, the tab label, and for `branch-pi` the pi model arguments and a newline-free prompt. New case `pane` sets `SUPERPOWERS_SDD_LAYOUT=pane` and expects one split right and no tab. Sonnet executors, one run per case: worktree 14/14, branch-pi 17/17, pane 13/13, collision 14/14; the previous skill fails exactly the tab and pi checks (2, 4 and 2 failures on the first three cases).
+
 ## v6.4.23 (2026-09-27)
 
 Fork-only. Motivating observation: subagent-driven-development's Model Selection table had seven rows over three tiers, and two of them no longer matched the fork. The "cheapest" row assumed a brief that carries the complete code to transcribe, but writing-plans now strips transcribable bodies from plans (its Proportion check), so the row was dead; in the 2026-09-27 eval the old skill still chose haiku for a Task 1 whose brief carries a signature and tests. The reviewer row asked the controller to scale the model to the diff's risk at every dispatch, a judgment call that in practice always resolved upward. And "most capable" on an account with a tier above Opus means dispatching that tier for every review, which is neither needed nor affordable. The per-harness model mapping lived in a hand-maintained `~/.pi/agent/AGENTS.md` that had already drifted from the skill's wording.
