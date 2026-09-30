@@ -1,6 +1,15 @@
 # Superpowers Release Notes
 
-## Unreleased
+## v6.4.24 (2026-09-30)
+
+First release of the cuongtransc/superpowers fork, maintained separately from cuongnbms/superpowers from here on. Base: cuongnbms `main` = v6.4.23. Upstream changes from cuongnbms and obra are ported by hand after a test run.
+
+### Subagent-Driven Development
+
+- `task-brief` matches the task number whole (cherry-picked from cuongnbms `dev` 167acb0; upstream obra/superpowers#2175, #2405): "Task 6" no longer pulls in "Task 6b" or "Task 6.1", a plan with only "Task 8b" no longer answers a request for 8, and "." no longer matches every task. Verified: the three new cases in `tests/claude-code/test-task-brief.sh` fail on v6.4.23 and pass with the fix (16/16); `test-sdd-workspace.sh` 24/24, `test-executing-plans-scripts.sh` 10/10, `test-worktree-path-policy.sh` 9/9; shellcheck clean.
+- Not taken: cuongnbms `dev` e5b9fc4 (SKILL.md trimmed under 500 lines, dry-run eval only); left for a later release.
+
+### SDD In New Session
 
 Fork-only. Motivating observation (2026-09-30, a real handoff of two plans): each worker opened as a split of the orchestrating session's pane, so two workers and the orchestrator shared one screen; the user asked for tabs. The same run showed two pi-only failures: a multi-line prompt sat in pi's input unsubmitted (`agent_prompt_stalled`), and pi started on `xai/grok-4.7` although its settings default was `alias/main`.
 
