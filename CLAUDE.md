@@ -29,7 +29,7 @@ If any of these checks fail, do not open the PR. Explain to your human partner w
 
 **Submitters MUST identify themselves.** Every PR and issue must disclose the model, harness, harness version, and all installed plugins used to produce the contribution — or state plainly that it was written by hand with no agent. This is not optional. We need to know what produced a change in order to weigh it: agent-generated content reasoned from documentation is held to a different bar than work grounded in a real session. Contributions that hide their authoring environment will be closed.
 
-**PRs target `main`.** This fork has one protected branch: changes land on `main` through a PR, and each release is a `vX.Y.Z` tag on `main`.
+**PRs target `main`.** This fork has one protected branch: changes land on `main` through a PR, and each release is a `vX.Y.Z` tag on `main`. The tag is created by `.github/workflows/tag-release.yml` (`scripts/tag-release.sh`) when a merged `package.json` version has no tag yet; a release PR therefore needs every manifest bumped (`scripts/bump-version.sh`) and a `## vX.Y.Z` heading in RELEASE-NOTES.md.
 
 ## What We Will Not Accept
 

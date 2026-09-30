@@ -1,0 +1,29 @@
+name: tag-release
+
+# After a release PR merges, tag main as vX.Y.Z from package.json.
+# scripts/tag-release.sh skips a version that is already tagged and refuses
+# drifted manifests or a missing RELEASE-NOTES.md heading.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag the release if its version is new
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          yq --version
+          bash scripts/tag-release.sh --push
