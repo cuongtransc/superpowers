@@ -9,10 +9,10 @@
 #   collision  wide pane, long plan slug, first `agent start` is rejected as
 #              name_taken so the caller must retry with a suffix that still fits
 #
-# Usage: setup-case.sh worktree|branch-pi|pane|collision|cta-lane|cta-nolane|cta-collision|cta-unrelated-exists|cta-agent-collision|cta-pi DEST_DIR
+# Usage: setup-case.sh worktree|branch-pi|pane|collision|cta-lane|cta-nolane|cta-collision|cta-unrelated-exists|cta-agent-collision|cta-pi|cta-state-c-uncommitted DEST_DIR
 set -euo pipefail
 
-case_name=${1:?usage: setup-case.sh worktree|branch-pi|pane|collision|cta-lane|cta-nolane|cta-collision|cta-unrelated-exists|cta-agent-collision|cta-pi DEST_DIR}
+case_name=${1:?usage: setup-case.sh worktree|branch-pi|pane|collision|cta-lane|cta-nolane|cta-collision|cta-unrelated-exists|cta-agent-collision|cta-pi|cta-state-c-uncommitted DEST_DIR}
 dest=${2:?usage: setup-case.sh CASE DEST_DIR}
 here="$(cd "$(dirname "$0")" && pwd)"
 
@@ -42,7 +42,8 @@ case "$case_name" in
     plan=$long ;;
   cta-lane|cta-pi) cta_mode=lane; [ "$case_name" = cta-pi ] && cta_pi=1 ;;
   cta-nolane) ;;
-  cta-collision) cta_mode=lane; cta_exists=1; long="docs/superpowers/plans/2026-09-05-add-tag-based-filtering-and-search-to-notes-cli.md"; mv "$dest/repo/$plan" "$dest/repo/$long"; plan=$long ;;
+  cta-state-c-uncommitted) cta_mode=lane; long="docs/superpowers/plans/2026-10-02-uncommitted-plan.md"; mv "$dest/repo/$plan" "$dest/repo/$long"; plan=$long; uncommitted_plan=$long ;;
+  cta-collision) cta_mode=lane; cta_exists=1; long="docs/superpowers/plans/2026-10-02-add-tag-based-filtering-and-search-to-notes-cli.md"; mv "$dest/repo/$plan" "$dest/repo/$long"; plan=$long ;;
   cta-agent-collision) cta_mode=lane; cta_agent_exists=1 ;;
   cta-unrelated-exists) cta_mode=lane; cta_unrelated=1 ;;
   *) echo "unknown case: $case_name" >&2; exit 2 ;;
@@ -52,6 +53,7 @@ cd "$dest/repo"
 git init -q -b main .
 git -c user.email=eval@example.com -c user.name=eval -c commit.gpgsign=false add -A
 git -c user.email=eval@example.com -c user.name=eval -c commit.gpgsign=false commit -qm "chore: notes-cli baseline with plan"
+if [ -n "${uncommitted_plan:-}" ]; then printf '\n# intentionally uncommitted\n' >> "$dest/repo/$uncommitted_plan"; fi
 
 dest_abs="$(cd "$dest" && pwd -P)"
 cat > "$dest_abs/env.sh" <<EOF
@@ -73,7 +75,7 @@ export CTA_SHIM_MODE=$cta_mode
 export CTA_SHIM_EXISTS=$cta_exists
 export CTA_SHIM_UNRELATED_EXISTS=$cta_unrelated
 export CTA_SHIM_AGENT_EXISTS=$cta_agent_exists
-export CTA_SHIM_PI=$cta_pi
+export CTA_SHIM_VALIDATE_PI=$cta_pi
 $layout_env
 EOF
 : > "$dest_abs/herdr-calls.log"

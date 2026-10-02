@@ -13,9 +13,10 @@ case "${1:-}" in
     if [ "${CTA_SHIM_EXISTS:-}" = 1 ] && [ ! -f "$state/existing-seen" ]; then touch "$state/existing-seen"; echo "cta: error: lane-$slug already exists; pick a new slug" >&2; exit 2; fi
     if [ "${CTA_SHIM_UNRELATED_EXISTS:-}" = 1 ]; then echo "cta: error: dispatch: lane-$slug started in pane w1:p2 but the prompt was not confirmed (herdr agent start: already exists)" >&2; exit 1; fi
     if [ "${CTA_SHIM_AGENT_EXISTS:-}" = 1 ] && [ ! -f "$state/agent-existing-seen" ]; then touch "$state/agent-existing-seen"; echo "cta: error: agent lane-$slug already exists — reuse it" >&2; exit 2; fi
-    worktree= brief= kind=claude model=opus class=code-wiring reason=
-    while [ $# -gt 0 ]; do case "$1" in --worktree) worktree=$2; shift 2;; --brief) brief=$2; shift 2;; --kind) kind=$2; shift 2;; --model) model=$2; shift 2;; --class) class=$2; shift 2;; --reason) reason=$2; shift 2;; *) shift;; esac; done
+    worktree='' brief='' kind=claude model=opus class=code-wiring
+    while [ $# -gt 0 ]; do case "$1" in --worktree) worktree=$2; shift 2;; --brief) brief=$2; shift 2;; --kind) kind=$2; shift 2;; --model) model=$2; shift 2;; --class) class=$2; shift 2;; --reason) if [ -z "${2:-}" ]; then echo 'cta: error: missing reason' >&2; exit 2; fi; shift 2;; *) shift;; esac; done
     [ -d "$worktree" ] || { echo "cta: error: worktree missing" >&2; exit 2; }
+    if [ "${CTA_SHIM_VALIDATE_PI:-0}" = 1 ] && { [ "$kind" != pi ] || [ "$model" != alias:mid-model ]; }; then echo 'cta: error: expected --kind pi --model alias:mid-model' >&2; exit 2; fi
     mkdir -p "$state"; cp "$brief" "$state/brief.md"
     printf 'lane-%s\tw1:p2\t%s\t%s\t%s\n' "$slug" "$kind" "$model" "$class"
     ;;

@@ -6,7 +6,7 @@ Herdr server or cta store is involved.
 
 ## Files
 
-- `evals.json` — ten cases with prompts and expectations
+- `evals.json` — eleven cases with prompts and expectations
 - `fixtures/repo/` — a small Python project with a committed plan
 - `fixtures/bin/herdr`, `fixtures/bin/cta` — CLI test doubles
 - `setup-case.sh <case> DEST` — materializes a git repo, both shims and env file
@@ -23,9 +23,10 @@ evals/grade.sh cta-lane /tmp/sdd-cta-lane /tmp/sdd-cta-lane/final.md
 
 The legacy cases retain regression checks for the Herdr worker path. Cases
 `cta-lane`, `cta-nolane`, `cta-collision`, `cta-agent-collision`,
-`cta-unrelated-exists` and `cta-pi` cover capability detection, safe fallback,
-both pre-dispatch collision classes, stopping on partial dispatch errors, and
-the pi override. Artifacts include `DEST/herdr-calls.log`,
+`cta-unrelated-exists`, `cta-state-c-uncommitted` and `cta-pi` cover capability
+detection, safe fallback, both pre-dispatch collision classes,
+uncommitted-plan refusal, stopping on partial-dispatch errors, and the pi
+override. Artifacts include `DEST/herdr-calls.log`,
 `DEST/cta-calls.log`, the shim state directories, and the executor final message.
 
 Waits that block until the worker turn ends are undesirable; the handoff must
