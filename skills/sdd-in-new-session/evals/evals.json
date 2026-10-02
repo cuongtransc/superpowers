@@ -78,6 +78,111 @@
         "The prompt file contains the absolute plan path, `subagent-driven-development` and `worktree`",
         "The final message reports the pane id and agent name and a check-in command"
       ]
+    },
+    {
+      "id": 4,
+      "name": "cta-lane",
+      "setup": "setup-case.sh cta-lane",
+      "prompt": "Hand the plan to a new session, class code-wiring.",
+      "expected_output": "cta lane dispatch used, no Herdr worker launch.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta"
+      ],
+      "expectations": [
+        "One capability probe, one real dispatch; worktree exists under repo .worktrees, brief path absolute.",
+        "Copied brief has absolute plan path in dispatched worktree, SDD skill and no-other-worktree isolation.",
+        "No Herdr worker call; final gives lane, pane, kind, model, plan, worktree and cta lane wait/status commands."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "cta-nolane",
+      "setup": "setup-case.sh cta-nolane",
+      "prompt": "Hand the plan to a new session.",
+      "expected_output": "Old cta falls back to Herdr path.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta",
+        "fixtures/bin/herdr"
+      ],
+      "expectations": [
+        "One failed capability probe and one Herdr handoff.",
+        "Final file is required; reports pane, agent, absolute plan, worktree isolation and check-in."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "cta-collision",
+      "setup": "setup-case.sh cta-collision",
+      "prompt": "Hand the long plan to a new session, class code-wiring.",
+      "expected_output": "Retry stored-lane collision with -2.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta"
+      ],
+      "expectations": [
+        "Two real dispatches; second slug is first plus -2 and both lengths <=27.",
+        "Final reports retry lane."
+      ]
+    },
+    {
+      "id": 7,
+      "name": "cta-agent-collision",
+      "setup": "setup-case.sh cta-agent-collision",
+      "prompt": "Hand the plan to a new session, class code-wiring.",
+      "expected_output": "Retry agent-name collision only.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta"
+      ],
+      "expectations": [
+        "Two dispatches and final names retry lane."
+      ]
+    },
+    {
+      "id": 8,
+      "name": "cta-unrelated-exists",
+      "setup": "setup-case.sh cta-unrelated-exists",
+      "prompt": "Hand the plan to a new session, class code-wiring.",
+      "expected_output": "Stop on partial dispatch failure without retry or Herdr fallback.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta"
+      ],
+      "expectations": [
+        "One real dispatch, no Herdr launch, final quotes prompt-not-confirmed error."
+      ]
+    },
+    {
+      "id": 9,
+      "name": "cta-pi",
+      "setup": "setup-case.sh cta-pi",
+      "prompt": "Hand the plan to a pi lane, class code-wiring.",
+      "expected_output": "Pi lane uses mid-tier alias.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta"
+      ],
+      "expectations": [
+        "One dispatch with --kind pi --model alias:mid-model --reason; shim validates these values.",
+        "Final reports kind pi and model mid-model."
+      ]
+    },
+    {
+      "id": 10,
+      "name": "cta-state-c-uncommitted",
+      "setup": "setup-case.sh cta-state-c-uncommitted",
+      "prompt": "In a normal checkout on main, hand the uncommitted plan to a new session, class code-wiring.",
+      "expected_output": "Refuse before worktree creation or dispatch and tell user to commit plan.",
+      "files": [
+        "fixtures/repo/",
+        "fixtures/bin/cta"
+      ],
+      "expectations": [
+        "Probe succeeds; no cta lane dispatch and no Herdr agent start.",
+        "Final clearly says to commit the plan first."
+      ]
     }
   ]
 }
