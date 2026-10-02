@@ -1,5 +1,16 @@
 # Superpowers Release Notes
 
+## v6.4.25 (2026-10-03)
+
+Fork-only. No upstream porting this release (nothing taken from cuongnbms or obra); it ships the fork's own `sdd-in-new-session` change from PR #3.
+
+### SDD In New Session
+
+- **Dispatches through `cta lane` when available** (PR #3, c70a964, 8c17566). Preflight probes `cta lane dispatch --help`; on success the plan goes to a lane (worktree, brief, class-routed harness and model, reviewers) instead of a hand-built Herdr tab. The probe is the compatibility check for older `cta` binaries; `--no-lane` forces the Herdr path, which is kept unchanged as the fallback.
+- New flags: `--class <class>` (task class for `cta lane dispatch`; asked once from `cta lane route` when omitted, never guessed) and `--no-lane`. `--branch` is refused on the lane path (a lane needs its own worktree). With `--pi`, the lane gets `--kind pi --model alias:mid-model`.
+- Failure rule: any `cta` error after the probe is reported verbatim and never falls back to Herdr (the lane store may hold a partial lane); only the two slug-collision refusals retry with `-2`..`-9`.
+- Evals: `skills/sdd-in-new-session/evals/` gained a `cta` test double and cases for the lane path; see `evals/README.md`. No new eval run for this release, it is a version bump of already merged, already evaluated content.
+
 ## v6.4.24 (2026-09-30)
 
 First release of the cuongtransc/superpowers fork, maintained separately from cuongnbms/superpowers from here on. Base: cuongnbms `main` = v6.4.23. Upstream changes from cuongnbms and obra are ported by hand after a test run.
