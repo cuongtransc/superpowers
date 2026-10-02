@@ -1,83 +1,16 @@
 {
   "skill_name": "sdd-in-new-session",
-  "notes": "Each case runs the real handoff against a `herdr` test double (fixtures/bin/herdr) that logs every call and answers with API-shaped JSON, so no Herdr server is needed. Materialize a case with `evals/setup-case.sh <case> <dest>`; it prints the repo, the plan path, and an env.sh that the executor must source at the start of every shell command to be 'inside Herdr'. Grade from artifacts: <dest>/herdr-calls.log (one shell-quoted line per herdr invocation), <dest>/.herdr-shim/prompt-<agent>.txt (the exact prompt text the agent received), <dest>/.herdr-shim/renames and agents, and the executor's final message.",
+  "notes": "Herdr and cta test doubles log shell-quoted calls. Materialize with setup-case.sh <case> <dest>; source env.sh before every shell command.",
   "evals": [
-    {
-      "id": 0,
-      "name": "worktree-claude-wide",
-      "setup": "setup-case.sh worktree",
-      "prompt": "I'm in Herdr. Hand the plan at docs/superpowers/plans/2026-09-05-notes-tags.md (repo at <REPO>) to a new session so this one stays free. Default isolation, claude.",
-      "expected_output": "One new tab labeled with the agent name, at the repo root, without focus (no pane split); its root pane renamed to the agent name; a claude agent started in it; one prompt sent that carries the absolute plan path, names superpowers:subagent-driven-development, and asks for a worktree; the wait is --until working; the session returns at once with pane id, agent name, plan path, isolation mode, and check-in commands.",
-      "files": [
-        "fixtures/repo/",
-        "fixtures/bin/herdr"
-      ],
-      "expectations": [
-        "herdr-calls.log has exactly one `tab create` call, with `--cwd <REPO>` (the repo root), `--label` set to the agent name, and no `--focus`; there is no `pane split` call",
-        "herdr-calls.log has a `pane rename` of the tab's root pane (w1:p2) to the agent name, and the agent name starts with `sdd-` and matches ^[a-z][a-z0-9_-]{0,31}$",
-        "herdr-calls.log has exactly one `agent start` call, with `--kind claude` and `--pane w1:p2`, and no permission-bypass flag after `--` (no dangerously-skip-permissions, no --yes, no auto-approve)",
-        "herdr-calls.log has exactly one `agent prompt` call and it carries `--until working`; there is no `agent prompt` with `--wait` but without `--until`, no `agent wait`, and no `pane wait-output`",
-        "The prompt file contains the absolute plan path (<REPO>/docs/superpowers/plans/2026-09-05-notes-tags.md), the words `subagent-driven-development` and `worktree`, and no unfilled placeholder such as <ABS_PLAN_PATH>, <ROOT>, or <ISOLATION>",
-        "herdr-calls.log has no `worktree` command, no `pane close`, and no `agent read`/`agent get`/`pane read` call after the `agent prompt` line (no polling)",
-        "The final message reports the pane id, the agent name, the plan path, the isolation mode (worktree), and at least one check-in command (`herdr agent get` or `herdr agent read`), and does not claim the plan finished or wait for it"
-      ]
-    },
-    {
-      "id": 1,
-      "name": "branch-pi-tall",
-      "setup": "setup-case.sh branch-pi",
-      "prompt": "/sdd-in-new-session docs/superpowers/plans/2026-09-05-notes-tags.md --branch --pi   (I'm in Herdr; repo at <REPO>)",
-      "expected_output": "A pi agent is started in a new tab on the mid tier (`-- --model alias/mid-model --thinking medium`); the prompt is sent as one line and tells the agent not to create a worktree but a new branch in <REPO>; the report warns that the working tree is shared.",
-      "files": [
-        "fixtures/repo/",
-        "fixtures/bin/herdr"
-      ],
-      "expectations": [
-        "herdr-calls.log has exactly one `tab create` call with `--cwd <REPO>` and a `--label` equal to the agent name, and no `pane split` call",
-        "herdr-calls.log has exactly one `agent start` call with `--kind pi`, `--pane w1:p2`, and the pi arguments `-- --model alias/mid-model --thinking medium`",
-        "herdr-calls.log has exactly one `agent prompt` call with `--until working`, and no bare `--wait`, `agent wait`, or `pane wait-output`",
-        "The prompt file contains the absolute plan path, says not to create a worktree, and says to create a new branch in <REPO> (the checkout path appears in the text); no unfilled placeholder remains",
-        "The prompt file contains no newline: the multi-line prompt was joined into one line before `agent prompt`",
-        "The prompt file still names superpowers:subagent-driven-development",
-        "The final message reports isolation mode as branch and warns that the working tree is shared with this session (editing here will collide)",
-        "herdr-calls.log has no `worktree` command, no `pane close`, and no polling call after the prompt"
-      ]
-    },
-    {
-      "id": 2,
-      "name": "name-collision-long-slug",
-      "setup": "setup-case.sh collision",
-      "prompt": "I'm in Herdr. Run docs/superpowers/plans/2026-09-05-add-tag-based-filtering-and-search-to-notes-cli.md in a separate tab with a fresh claude agent (repo at <REPO>). Keep this session free.",
-      "expected_output": "The derived name from the 52-character slug is truncated so that it fits the 32-character agent-name limit; the first `agent start` is rejected as name_taken; the retry uses a suffixed name that still fits the limit; the pane label is updated to the final name; the prompt goes to the final name and carries the absolute plan path.",
-      "files": [
-        "fixtures/repo/",
-        "fixtures/bin/herdr"
-      ],
-      "expectations": [
-        "herdr-calls.log has two `agent start` calls; the first fails with agent_name_taken and the second succeeds (its name is the one in .herdr-shim/agents)",
-        "Every agent name passed to `agent start` (both attempts) matches ^[a-z][a-z0-9_-]{0,31}$ (length 32 or less); the second differs from the first by a suffix such as -2",
-        "The last `pane rename` of w1:p2 and the last tab label (`tab create --label` or `tab rename`) both equal the final (started) agent name",
-        "The single `agent prompt` call targets the final agent name (or its pane id) with `--until working`",
-        "The prompt file contains the absolute plan path <REPO>/docs/superpowers/plans/2026-09-05-add-tag-based-filtering-and-search-to-notes-cli.md and no unfilled placeholder",
-        "The prompt was not sent twice (`.herdr-shim/prompt_count` is 1) and the final message reports the final agent name and pane id"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "pane-layout-from-env",
-      "setup": "setup-case.sh pane",
-      "prompt": "I'm in Herdr. Hand the plan at docs/superpowers/plans/2026-09-05-notes-tags.md (repo at <REPO>) to a new session so this one stays free.",
-      "expected_output": "SUPERPOWERS_SDD_LAYOUT=pane is set in the environment, so the worker opens in a split of this pane (right, since the pane is 220x50) instead of a new tab; everything else matches the worktree case.",
-      "files": [
-        "fixtures/repo/",
-        "fixtures/bin/herdr"
-      ],
-      "expectations": [
-        "herdr-calls.log has exactly one `pane split` call with `--direction right`, `--cwd <REPO>` and `--no-focus`, and no `tab create` call",
-        "herdr-calls.log has exactly one `agent start` call with `--kind claude` and `--pane w1:p2`, and one `agent prompt` with `--until working`",
-        "The prompt file contains the absolute plan path, `subagent-driven-development` and `worktree`",
-        "The final message reports the pane id and agent name and a check-in command"
-      ]
-    }
+    {"id":0,"name":"worktree-claude-wide","setup":"setup-case.sh worktree","prompt":"Hand the plan at docs/superpowers/plans/2026-09-05-notes-tags.md to a new session (repo <REPO>).","expected_output":"Herdr claude worktree handoff; return immediately.","files":["fixtures/repo/","fixtures/bin/herdr"],"expectations":["One unfocused tab with --cwd <REPO>, no pane split.","Pane renamed to valid sdd- agent name; one claude agent start with no bypass flags.","One prompt with absolute plan path and SDD skill, --until working; no bare wait, follow-up polling, worktree command or pane close.","Prompt contains no unfilled placeholder; final reports pane, agent, plan, worktree isolation, check-in command and does not claim completion."]},
+    {"id":1,"name":"branch-pi-tall","setup":"setup-case.sh branch-pi","prompt":"/sdd-in-new-session docs/superpowers/plans/2026-09-05-notes-tags.md --branch --pi (repo <REPO>)","expected_output":"Pi on mid-tier, shared checkout branch.","files":["fixtures/repo/","fixtures/bin/herdr"],"expectations":["One tab and pi agent started with -- --model alias/mid-model --thinking medium; prompt has no newline.","Prompt requests a new branch, explicitly says not to create a worktree, and names checkout; final warns shared tree.","No permission bypass, bare wait, follow-up polling, worktree command or pane close; prompt has no unfilled placeholder."]},
+    {"id":2,"name":"name-collision-long-slug","setup":"setup-case.sh collision","prompt":"Run the long plan in a separate tab (repo <REPO>).","expected_output":"Herdr collision retries with valid suffix.","files":["fixtures/repo/","fixtures/bin/herdr"],"expectations":["Two agent start attempts; both names satisfy the 32-character pattern and retry uses a -2 suffix.","Final prompt targets successful agent; pane rename and tab label match it; prompt sent once and final names pane and agent."]},
+    {"id":3,"name":"pane-layout-from-env","setup":"setup-case.sh pane","prompt":"Hand the plan at docs/superpowers/plans/2026-09-05-notes-tags.md to a new session (repo <REPO>).","expected_output":"Split-pane handoff.","files":["fixtures/repo/","fixtures/bin/herdr"],"expectations":["One pane split right at repo root, no tab create; pane named and claude agent started.","Single absolute-plan SDD prompt uses --until working; final names pane and check-in command."]},
+    {"id":4,"name":"cta-lane","setup":"setup-case.sh cta-lane","prompt":"Hand the plan to a new session, class code-wiring.","expected_output":"Dispatch via cta lane, no Herdr worker calls.","files":["fixtures/repo/","fixtures/bin/cta"],"expectations":["Exactly one cta lane dispatch --help and one real dispatch, no other cta/Herdr calls; worktree exists under <REPO>/.worktrees and brief is absolute.","Copied brief contains absolute plan path, subagent-driven-development and create no other worktree or branch; it excludes create a new git worktree.","Final message reports lane id, pane, kind, model, worktree and plan; names cta lane wait <lane_id> and cta lane status."]},
+    {"id":5,"name":"cta-nolane","setup":"setup-case.sh cta-nolane","prompt":"Hand the plan to a new session.","expected_output":"Use Herdr fallback when cta has no lane command.","files":["fixtures/repo/","fixtures/bin/cta","fixtures/bin/herdr"],"expectations":["One probe and existing worktree assertions pass.","The fallback final message reports pane, agent, absolute plan path, worktree isolation and a Herdr check-in command."]},
+    {"id":6,"name":"cta-collision","setup":"setup-case.sh cta-collision","prompt":"Hand the long plan to a new session, class code-wiring.","expected_output":"Retry the stored-lane collision with -2.","files":["fixtures/repo/","fixtures/bin/cta"],"expectations":["Two real dispatches; second slug equals first plus -2 and both are at most 27 characters.","Final message names the suffixed lane."]},
+    {"id":7,"name":"cta-agent-collision","setup":"setup-case.sh cta-agent-collision","prompt":"Hand the plan to a new session, class code-wiring.","expected_output":"Retry only an agent-name collision before dispatch; report lane suffix.","files":["fixtures/repo/","fixtures/bin/cta"],"expectations":["Two real dispatches and the final message names the -2 lane."]},
+    {"id":8,"name":"cta-unrelated-exists","setup":"setup-case.sh cta-unrelated-exists","prompt":"Hand the plan to a new session, class code-wiring.","expected_output":"Stop on unrelated partial-dispatch failure.","files":["fixtures/repo/","fixtures/bin/cta"],"expectations":["One real dispatch, no retry or fallback, final quotes error."]},
+    {"id":9,"name":"cta-pi","setup":"setup-case.sh cta-pi","prompt":"Hand the plan to a pi lane, class code-wiring.","expected_output":"Pi lane uses the mid-tier alias.","files":["fixtures/repo/","fixtures/bin/cta"],"expectations":["Exactly one real dispatch includes --kind pi --model alias:mid-model --reason; no Herdr start.","Final reports kind pi and model mid-model."]}
   ]
 }

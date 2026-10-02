@@ -5,7 +5,7 @@ description: Hands a written implementation plan to a fresh claude or pi coding 
 
 # SDD In New Session
 
-Hand a plan to a fresh agent in a new Herdr tab named after it (or a split of this pane), confirm the handoff, and return. This session never waits for the plan to finish. Reached from the Execution Handoff in superpowers:writing-plans, or directly as `/sdd-in-new-session [PLAN_PATH] [--branch] [--pi]`.
+Hand a plan to a fresh agent in a new Herdr tab named after it (or a split of this pane), confirm the handoff, and return. This session never waits for the plan to finish. Reached from the Execution Handoff in superpowers:writing-plans, or directly as `/sdd-in-new-session [PLAN_PATH] [--branch] [--pi] [--class <class>] [--no-lane]`.
 
 The `herdr` skill (installed, or printed by `herdr --skill`) is the reference for CLI syntax, JSON shapes, and safety rules. Two of its defaults are overridden here on purpose:
 
@@ -18,20 +18,24 @@ The `herdr` skill (installed, or printed by `herdr --skill`) is the reference fo
 |---|---|---|
 | `PLAN_PATH` | plan written in this conversation; else newest file in `docs/superpowers/plans/` | Plan to execute |
 | `--branch` | off → worktree | Spawned agent works in THIS checkout, on the plan's branch when there is one, else on a new branch from HEAD. The working tree is then shared with this session. |
+| `--class <class>` | none | Task class for `cta lane dispatch`; when `cta` has lanes, ask once if omitted, listing classes from `cta lane route`. Never guess. |
+| `--no-lane` | off | Force the Herdr path even when `cta lane` is available. |
 | `--pi` | off → `claude` | Start `--kind pi` on the mid-tier model instead of `--kind claude` |
 | `--tab` / `--pane` | `$SUPERPOWERS_SDD_LAYOUT`, else `tab` | Open the worker in a new named tab, or in a split of this session's pane |
 
 ## Preflight
 
-1. `test "${HERDR_ENV:-}" = 1` — otherwise say you are not inside Herdr and stop.
-2. `PLAN=$(realpath "$PLAN_PATH")` — must exist. The spawned agent may work in another directory, so only an absolute path survives; "Where the plan lives" may rewrite it.
-3. `ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)`.
-4. Agent name — must match `[a-z][a-z0-9_-]{0,31}`, so the `sdd-` prefix is load-bearing (plan slugs start with a date). Cut at 26 so a `-2`/`-3` collision suffix still fits in 32:
+1. Unless `--no-lane` is set, probe `cta lane dispatch --help >/dev/null 2>&1`. If it succeeds, use the preferred `cta lane` path below; if it fails, use the Herdr fallback. The exact probe is also the compatibility check for older `cta` binaries. The cta path still requires Herdr; if the command refuses for environment or another reason, report the error and stop, never fall back after a `cta` failure.
+2. For the Herdr fallback, `test "${HERDR_ENV:-}" = 1` — otherwise say you are not inside Herdr and stop.
+3. `PLAN=$(realpath "$PLAN_PATH")` — must exist. The spawned agent may work in another directory, so only an absolute path survives; "Where the plan lives" may rewrite it.
+4. `ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)`.
+5. Agent name — must match `[a-z][a-z0-9_-]{0,31}`, so the `sdd-` prefix is load-bearing (plan slugs start with a date). Define `PLAN_SLUG` and derive `NAME`:
    ```bash
-   NAME="sdd-$(basename "$PLAN" .md | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//; s/[^a-z0-9_-]/-/g' | cut -c1-26 | sed 's/-$//')"
+   PLAN_SLUG=$(basename "$PLAN" .md | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//; s/[^a-z0-9_-]/-/g')
+   NAME="sdd-$(printf '%s' "$PLAN_SLUG" | cut -c1-26 | sed 's/-$//')"
    ```
-5. `LAYOUT` = `tab` or `pane` from the flag, else `${SUPERPOWERS_SDD_LAYOUT:-tab}`. The variable lets a user who prefers splits set it once in their shell profile.
-6. Detect where the plan lives (next section) and set `CWD`, `PLAN`, `ISOLATION`.
+6. `LAYOUT` = `tab` or `pane` from the flag, else `${SUPERPOWERS_SDD_LAYOUT:-tab}`. The variable lets a user who prefers splits set it once in their shell profile.
+7. Detect where the plan lives (next section) and set `CWD`, `PLAN`, `ISOLATION`.
 
 ## Where the plan lives
 
@@ -65,7 +69,19 @@ git worktree add "$WT" "$BRANCH"
 PLAN="$WT/$REL"; CWD="$WT"
 ```
 
-## Steps
+## With `cta lane` (preferred)
+
+Use this path only when the preflight probe succeeds. `cta` itself requires a Herdr session; a failure after the probe is not a reason to switch paths.
+
+1. **Class:** use `--class <class>`. If omitted, run `cta lane route`, present its classes, and ask once. If the user declines, stop without creating a worktree or dispatching. Reject a supplied class not listed by `cta lane route`; do not dispatch it. Never infer a class from the plan.
+2. **Workspace:** detect the plan location with the signals in “Where the plan lives.” States A and B retain their existing worktree behavior and set `CWD`, `PLAN`, and `ISOLATION` as there. In state C, create a dedicated worktree here: `BRANCH=sdd/<name without sdd->`; `git worktree add "$ROOT/.worktrees/$BRANCH" -b "$BRANCH"`; then set `CWD` and `PLAN` as in state B and `ISOLATION` to *in place* (the worker is already in this plan's workspace and must create no other worktree or branch). `--branch` is refused on this path: “`--branch` shares this checkout and cta lane needs a worktree of its own: rerun without `--branch`, or add `--no-lane` for the Herdr path”.
+3. **Brief:** create `BRIEF=$(mktemp -d)/brief.md` containing `# SDD: <plan title>` and the existing Prompt template text (absolute plan path, skill name, and `$ISOLATION`). `cta lane dispatch` copies this brief into the lane directory and appends the lane contract.
+4. **Slug:** use `PLAN_SLUG` from Preflight step 5. Set `SLUG="sdd-$(printf '%s' "$PLAN_SLUG" | cut -c1-19 | sed 's/-$//')"` (at most 23 characters). Lane ids are permanent, including after close or failed dispatch. Retry only when stderr's first line matches either `^cta: error: agent lane-$SLUG already exists — reuse it` (Herdr agent) or `^cta: error: lane-$SLUG already exists; pick a new slug` (stored lane row). These refusals occur before a tab or agent starts: try `$SLUG-2` through `$SLUG-9` (at most 26 chars). Any other error, or a ninth collision, stops.
+5. **Dispatch:** run `cta lane dispatch "$SLUG" --worktree "$CWD" --brief "$BRIEF" --class "$CLASS"`. With `--pi`, add `--kind pi --model alias:mid-model --reason "sdd-in-new-session --pi"`. This retains the routed model when only kind changes; the Claude model name does not resolve as a pi alias. Without `--pi`, routing chooses harness, model, and reviewers; the skill names no model. A blocking tier refusal is reported verbatim and stops.
+6. **Report:** successful dispatch prints `lane_id<TAB>pane<TAB>kind<TAB>model<TAB>title`. Report lane id, pane, kind, model, worktree, and plan path. Check in with `cta lane wait <lane_id>` (waits for the round to finish) or `cta lane status`.
+7. **Failures:** apart from the precise collision retry above, any non-zero exit prints `cta: error: …`; report it verbatim and stop. Never fall back to Herdr after a `cta` failure: the lane store may contain a partially created lane.
+
+## Without `cta` (fallback): Steps
 
 ```bash
 if [ "$LAYOUT" = pane ]; then
@@ -116,7 +132,7 @@ With `--pi`, join the prompt into one line before sending it: `PROMPT=$(printf '
 
 ## After handoff
 
-Return immediately — no polling, no `agent wait`, no reading the transcript. Report:
+Return immediately — no polling, no `agent wait`, no reading the transcript. For cta lanes report the lane id, pane, kind, model, worktree, plan path, and check-in commands from the preferred-path section. For the Herdr fallback, report:
 
 - tab id, pane id and label, agent name, plan path, workspace (worktree `<path>` | branch `<name>` in this checkout) and who created it
 - in state A: that this session left the worktree and where it now is

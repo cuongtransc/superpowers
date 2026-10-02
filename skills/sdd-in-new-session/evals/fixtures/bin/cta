@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -u
+log=${CTA_SHIM_LOG:?CTA_SHIM_LOG not set}; state=${CTA_SHIM_STATE:?CTA_SHIM_STATE not set}
+mkdir -p "$state"
+{ printf 'cta'; for a in "$@"; do printf ' %q' "$a"; done; printf '\n'; } >> "$log"
+if [ "${HERDR_ENV:-}" != 1 ] || [ -z "${HERDR_SESSION:-}" ] || [ -z "${HERDR_PANE_ID:-}" ] || [ -z "${HERDR_WORKSPACE_ID:-}" ]; then echo 'cta: error: not inside Herdr — HERDR_ENV, session, pane and workspace are required' >&2; exit 2; fi
+if [ "${CTA_SHIM_MODE:-nolane}" = nolane ]; then echo "No such command 'lane'." >&2; exit 2; fi
+[ "${1:-}" = lane ] || exit 2; shift
+case "${1:-}" in
+  dispatch)
+    shift; [ "${1:-}" = --help ] && exit 0
+    slug=${1:-}; shift
+    if [ "${CTA_SHIM_EXISTS:-}" = 1 ] && [ ! -f "$state/existing-seen" ]; then touch "$state/existing-seen"; echo "cta: error: lane-$slug already exists; pick a new slug" >&2; exit 2; fi
+    if [ "${CTA_SHIM_UNRELATED_EXISTS:-}" = 1 ]; then echo "cta: error: dispatch: lane-$slug started in pane w1:p2 but the prompt was not confirmed (herdr agent start: already exists)" >&2; exit 1; fi
+    if [ "${CTA_SHIM_AGENT_EXISTS:-}" = 1 ] && [ ! -f "$state/agent-existing-seen" ]; then touch "$state/agent-existing-seen"; echo "cta: error: agent lane-$slug already exists — reuse it" >&2; exit 2; fi
+    worktree= brief= kind=claude model=opus class=code-wiring reason=
+    while [ $# -gt 0 ]; do case "$1" in --worktree) worktree=$2; shift 2;; --brief) brief=$2; shift 2;; --kind) kind=$2; shift 2;; --model) model=$2; shift 2;; --class) class=$2; shift 2;; --reason) reason=$2; shift 2;; *) shift;; esac; done
+    [ -d "$worktree" ] || { echo "cta: error: worktree missing" >&2; exit 2; }
+    mkdir -p "$state"; cp "$brief" "$state/brief.md"
+    printf 'lane-%s\tw1:p2\t%s\t%s\t%s\n' "$slug" "$kind" "$model" "$class"
+    ;;
+  route) if [ -n "${2:-}" ]; then printf '%s: ok\n' "$2"; else printf 'code-wiring: ok\ndocs-decision: ok\n'; fi;;
+  wait|status) printf 'lane status\n';;
+  *) echo 'Unknown lane action' >&2; exit 2;;
+esac

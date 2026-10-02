@@ -1,48 +1,32 @@
 # sdd-in-new-session evals
 
-The skill only runs inside Herdr, so these evals replace the `herdr` CLI with a
-test double (`fixtures/bin/herdr`) that logs every invocation and answers with
-JSON shaped like the real socket API. No Herdr server is involved.
+These evals use test doubles for `herdr` and `cta` (`fixtures/bin/herdr` and
+`fixtures/bin/cta`) that log calls and simulate relevant CLI results. No real
+Herdr server or cta store is involved.
 
 ## Files
 
-- `evals.json` — four cases with prompts and expectations
+- `evals.json` — ten cases with prompts and expectations
 - `fixtures/repo/` — a small Python project with a committed plan
-- `fixtures/bin/herdr` — the test double; knobs are documented at its top
-- `setup-case.sh <case> DEST` — materializes a case: git repo, shim on PATH,
-  and `DEST/env.sh` that makes a shell look like a Herdr pane (cwd = repo,
-  `HERDR_ENV=1`, pane ids, shim log paths)
-- `grade.sh <case> DEST [final-message.md]` — mechanical PASS/FAIL over the
-  call log, the prompt file, and the final message
+- `fixtures/bin/herdr`, `fixtures/bin/cta` — CLI test doubles
+- `setup-case.sh <case> DEST` — materializes a git repo, both shims and env file
+- `grade.sh <case> DEST [final-message.md]` — mechanical PASS/FAIL over artifacts
 
 ## Running a case
 
 ```bash
-evals/setup-case.sh collision /tmp/sdd-collision
-# executor: "source /tmp/sdd-collision/env.sh" at the start of every shell
-# command, then perform the handoff as the skill says
-evals/grade.sh collision /tmp/sdd-collision /tmp/final-message.md
+evals/setup-case.sh cta-lane /tmp/sdd-cta-lane
+# executor: source /tmp/sdd-cta-lane/env.sh before each shell command
+# perform the handoff as the skill says
+evals/grade.sh cta-lane /tmp/sdd-cta-lane /tmp/sdd-cta-lane/final.md
 ```
 
-Artifacts to read by hand: `DEST/herdr-calls.log`,
-`DEST/.herdr-shim/prompt-<agent>.txt`, `DEST/.herdr-shim/renames`.
+The legacy cases retain regression checks for the Herdr worker path. Cases
+`cta-lane`, `cta-nolane`, `cta-collision`, `cta-agent-collision`,
+`cta-unrelated-exists` and `cta-pi` cover capability detection, safe fallback,
+both pre-dispatch collision classes, stopping on partial dispatch errors, and
+the pi override. Artifacts include `DEST/herdr-calls.log`,
+`DEST/cta-calls.log`, the shim state directories, and the executor final message.
 
-## Cases
-
-| case | pane | flags | what it exercises |
-|---|---|---|---|
-| worktree | 220x50 | none | new tab, claude, worktree prompt, `--until working`, return at once |
-| branch-pi | 80x60 | `--branch --pi` | new tab, pi on `alias/mid-model` thinking `medium`, one-line no-worktree prompt naming the checkout, shared-tree warning |
-| pane | 220x50 | none; `SUPERPOWERS_SDD_LAYOUT=pane` in env | split right instead of a tab, otherwise as worktree |
-| collision | 220x50 | none, 52-char slug | first `agent start` rejected as `agent_name_taken`; retry name must still fit 32 chars; tab and pane relabeled |
-
-Waits that would block until the agent's turn ends (bare `--wait`, `agent wait`,
-`pane wait-output`) sleep `HERDR_SHIM_TURN_SECONDS` (default 25) so they show up
-in timing as well as in the log.
-
-## What the evals cannot cover
-
-- Whether Herdr classifies the spawned agent as `working` without the claude/pi
-  integration hooks installed (`herdr integration status`)
-- How the spawned agent reconciles the `--branch` prompt with
-  subagent-driven-development's worktree setup step
+Waits that block until the worker turn ends are undesirable; the handoff must
+return after the worker is confirmed working.
