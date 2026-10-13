@@ -5,7 +5,7 @@ description: Hands a written implementation plan to a fresh claude or pi coding 
 
 # SDD In New Session
 
-Hand a plan to a fresh agent in a new Herdr tab named after it (or a split of this pane), confirm the handoff, and return. This session never waits for the plan to finish. Reached from the Execution Handoff in superpowers:writing-plans, or directly as `/sdd-in-new-session [PLAN_PATH] [--branch] [--pi] [--class <class>] [--no-lane]`.
+Hand a plan to a fresh agent in a new Herdr tab named after it (or a split of this pane), confirm the handoff, and return. This session never blocks on the plan: one harness-tracked background wait (see "After handoff") tells it when the lane finishes. Reached from the Execution Handoff in superpowers:writing-plans, or directly as `/sdd-in-new-session [PLAN_PATH] [--branch] [--pi] [--class <class>] [--no-lane]`.
 
 The `herdr` skill (installed, or printed by `herdr --skill`) is the reference for CLI syntax, JSON shapes, and safety rules. Two of its defaults are overridden here on purpose:
 
@@ -78,7 +78,7 @@ Use this path only when the preflight probe succeeds. `cta` itself requires a He
 3. **Brief:** create `BRIEF=$(mktemp -d)/brief.md` containing `# SDD: <plan title>` and the existing Prompt template text (absolute plan path, skill name, and `$ISOLATION`). `cta lane dispatch` copies this brief into the lane directory and appends the lane contract.
 4. **Slug:** use `PLAN_SLUG` from Preflight step 5. Set `SLUG="sdd-$(printf '%s' "$PLAN_SLUG" | cut -c1-19 | sed 's/-$//')"` (at most 23 characters). Lane ids are permanent, including after close or failed dispatch. Retry only when stderr's first line matches either `^cta: error: agent lane-$SLUG already exists — reuse it` (Herdr agent) or `^cta: error: lane-$SLUG already exists; pick a new slug` (stored lane row). These refusals occur before a tab or agent starts: try `$SLUG-2` through `$SLUG-9` (at most 26 chars). Any other error, or a ninth collision, stops.
 5. **Dispatch:** run `cta lane dispatch "$SLUG" --worktree "$CWD" --brief "$BRIEF" --class "$CLASS"`. With `--pi`, add `--kind pi --model alias:mid-model --reason "sdd-in-new-session --pi"`. This retains the routed model when only kind changes; the Claude model name does not resolve as a pi alias. Without `--pi`, routing chooses harness, model, and reviewers; the skill names no model. A blocking tier refusal is reported verbatim and stops.
-6. **Report:** successful dispatch prints `lane_id<TAB>pane<TAB>kind<TAB>model<TAB>title`. Report lane id, pane, kind, model, worktree, and plan path. Check in with `cta lane wait <lane_id>` (waits for the round to finish) or `cta lane status`.
+6. **Report:** successful dispatch prints `lane_id<TAB>pane<TAB>kind<TAB>model<TAB>title`. Report lane id, pane, kind, model, worktree, and plan path. Then start the background wait from "After handoff". When it returns, report at once: its output (report path, diff command, review step), then continue with the review step. `cta lane status` alone never notifies: a lane that wrote DONE at 03:57 sat uncollected until 10:55 (~7 h, lane-sdd-kept-workspaces, 2026-10-13) because status only said "finish ready: run cta lane wait".
 7. **Failures:** apart from the precise collision retry above, any non-zero exit prints `cta: error: …`; report it verbatim and stop. Never fall back to Herdr after a `cta` failure: the lane store may contain a partially created lane.
 
 ## Without `cta` (fallback): Steps
@@ -132,7 +132,15 @@ With `--pi`, join the prompt into one line before sending it: `PROMPT=$(printf '
 
 ## After handoff
 
-Return immediately — no polling, no `agent wait`, no reading the transcript. For cta lanes report the lane id, pane, kind, model, worktree, plan path, and check-in commands from the preferred-path section. For the Herdr fallback, report:
+Report the handoff, then start ONE background wait that the harness tracks, so its exit wakes this session: no polling loops, no `agent wait` loops, no reading the transcript.
+
+- cta lane: `cta lane wait <lane_id>`.
+- Herdr fallback: `herdr agent wait NAME --until done`.
+- Claude Code: Bash with `run_in_background: true`. Other harnesses: their equivalent; with none, tell the user to run `cta lane status` (or `herdr agent get NAME`) later.
+- When it returns, tell the user at once (report path, diff command, review step), then continue with the review step.
+- While the lane runs, never estimate its remaining time; name the phases still to run (e.g. the whole-branch review wave). "10–20 min left" at 03:13 became 43 min because that wave was still ahead.
+
+For cta lanes report the lane id, pane, kind, model, worktree, plan path, and check-in commands from the preferred-path section. For the Herdr fallback, report:
 
 - tab id, pane id and label, agent name, plan path, workspace (worktree `<path>` | branch `<name>` in this checkout) and who created it
 - in state A: that this session left the worktree and where it now is
