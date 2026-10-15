@@ -29,5 +29,19 @@ uncommitted-plan refusal, stopping on partial-dispatch errors, and the pi
 override. Artifacts include `DEST/herdr-calls.log`,
 `DEST/cta-calls.log`, the shim state directories, and the executor final message.
 
-Waits that block until the worker turn ends are undesirable; the handoff must
-return after the worker is confirmed working.
+Waits that block until the worker turn ends are undesirable *in the handoff*:
+the prompt is confirmed with `--until working`, never bare `--wait`. After the
+handoff the skill starts exactly ONE harness-tracked background wait, and the
+grader allows exactly that and nothing else:
+
+- Herdr fallback: one `herdr agent wait NAME --until done` for the started
+  agent, issued after the `agent prompt`. `grade.sh` still FAILs a bare
+  `--wait` on the prompt, any `pane wait-output`, a second `agent wait`, and
+  any `agent read`/`agent get`/`pane read` after the prompt.
+- cta path (`cta-lane`, `cta-pi`): one `cta lane wait lane-sdd-...` after the
+  real dispatch, and no other `cta lane wait`.
+
+The `herdr agent wait --until done` double sleeps `HERDR_SHIM_TURN_SECONDS`
+(default 25) to model the turn; it is logged before it sleeps, so a foreground
+run shows up as latency, and the executor runs it in the background as the
+skill says. The `cta lane wait` double returns at once.
