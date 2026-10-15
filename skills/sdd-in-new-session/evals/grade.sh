@@ -15,6 +15,15 @@ check() { if [ "$2" -eq 0 ]; then ok "$1" "$3"; else bad "$1" "$3"; fi; }
 count() { grep -c -E "$1" "$herdr_log" 2>/dev/null || true; }
 line() { grep -E "$1" "$herdr_log" 2>/dev/null | head -n "${2:-1}"; }
 
+# One `cta lane wait lane-sdd-...` issued after the real dispatch; no other wait.
+cta_wait_check() {
+  local n after
+  n=$(grep -c '^cta lane wait ' "$cta_log" || true)
+  after=$(awk '/^cta lane dispatch sdd-/{f=1; next} f && /^cta lane wait lane-sdd-[^ ]*$/{c++} END{print c+0}' "$cta_log")
+  cta_wait_detail="cta_waits=$n after_dispatch=$after"
+  [ "$n" = 1 ] && [ "$after" = 1 ]
+}
+
 case "$case_name" in
   cta-lane|cta-nolane|cta-collision|cta-agent-collision|cta-unrelated-exists|cta-pi|cta-state-c-uncommitted)
     probes=$(grep -c '^cta lane dispatch --help$' "$cta_log" 2>/dev/null || true)
@@ -43,7 +52,7 @@ case "$case_name" in
           call_count_ok=0; { [ "$(grep -c '^cta lane dispatch --help$' "$cta_log")" = 1 ] && [ "$real" = 1 ]; } || call_count_ok=1; check "exactly one probe and one dispatch" "$call_count_ok" "probe/dispatch counts"
           worktree_arg=$(grep -v '^cta lane dispatch --help$' "$cta_log" | awk '{for(i=1;i<=NF;i++) if($i=="--worktree") print $(i+1)}')
           dispatch_args=$(grep '^cta lane dispatch sdd-' "$cta_log" | grep -c . || true)
-          other_calls=$(grep -v -E '^cta lane dispatch --help$|^cta lane route( |$)|^cta lane dispatch ' "$cta_log" | grep -c . || true)
+          other_calls=$(grep -v -E '^cta lane dispatch --help$|^cta lane route( |$)|^cta lane dispatch |^cta lane wait ' "$cta_log" | grep -c . || true)
           brief_arg=$(grep -v '^cta lane dispatch --help$' "$cta_log" | awk '{for(i=1;i<=NF;i++) if($i=="--brief") print $(i+1)}')
           args_ok=0; { [ "$other_calls" = 0 ] && [ "$dispatch_args" = 1 ] && grep -q -F "$repo/.worktrees/" <<<"$worktree_arg" && [ "${worktree_arg#/}" != "$worktree_arg" ] && [ "${brief_arg#/}" != "$brief_arg" ] && [ -f "$brief_arg" ]; } || args_ok=1; check "only allowed cta calls; worktree and brief valid" "$args_ok" "$worktree_arg :: $brief_arg"
           rel_plan=${plan_abs#"$repo"/}; expected_plan="$worktree_arg/$rel_plan"
@@ -51,6 +60,7 @@ case "$case_name" in
           herdr_count=$(grep -c '^herdr ' "$herdr_log" || true)
           no_herdr=0; [ "$herdr_count" = 0 ] || no_herdr=1; check "no Herdr calls in lane path" "$no_herdr" "$(cat "$herdr_log")"
           final_ok=0; { [ -n "$final" ] && [ -f "$final" ] && grep -q 'lane-sdd-' "$final" && grep -q 'cta lane wait lane-sdd-' "$final" && grep -q 'cta lane status' "$final"; } || final_ok=1; check "final reports lane and check-ins" "$final_ok" "$final"
+          cta_wait_ok=0; cta_wait_check; cta_wait_ok=$?; check "exactly one tracked cta lane wait, after dispatch" "$cta_wait_ok" "$cta_wait_detail"
           ;;
         cta-collision|cta-agent-collision)
           attempts_ok=0; [ "$real" = 2 ] || attempts_ok=1; check "two real dispatch attempts" "$attempts_ok" "real=$real"
@@ -68,6 +78,7 @@ case "$case_name" in
         cta-pi)
           pi_ok=0; { [ "$real" = 1 ] && grep -q -- '--kind pi --model alias:mid-model --reason' "$cta_log" && ! grep -q '^herdr agent start' "$herdr_log"; } || pi_ok=1; check "pi arguments and no Herdr worker" "$pi_ok" "real=$real"
           final_ok=0; { [ -n "$final" ] && [ -f "$final" ] && grep -q 'pi' "$final" && grep -q 'mid-model' "$final"; } || final_ok=1; check "final reports pi kind and model" "$final_ok" "$final"
+          cta_wait_ok=0; cta_wait_check; cta_wait_ok=$?; check "exactly one tracked cta lane wait, after dispatch" "$cta_wait_ok" "$cta_wait_detail"
           ;;
       esac
       printf '\n%s: %d passed, %d failed\n' "$case_name" "$pass" "$fail"
@@ -99,10 +110,14 @@ prompt_file_ok=0; { [ -f "$pf" ] && grep -q -F "$plan_abs" "$pf" && grep -q 'sub
 prompt_line=$(line '^herdr agent prompt ')
 prompt_ok=0; { [ "$(count '^herdr agent prompt ')" = 1 ] && grep -q -- '--until working' <<<"$prompt_line" && grep -q -E "^herdr agent prompt ($started_name|w1:p2) " <<<"$prompt_line"; } || prompt_ok=1; check "one prompt to started agent until working" "$prompt_ok" "$prompt_line"
 if [ "$case_name" = collision ]; then target_ok=0; printf '%s\n' "$prompt_line" | grep -F "$started_name" >/dev/null || target_ok=1; check "collision prompt targets successful agent" "$target_ok" "$started_name"; fi
-bare=$(grep -E '^herdr agent prompt ' "$herdr_log" | grep -- '--wait' | grep -vc -- '--until' || true); waits=$(count '^herdr (agent wait|pane wait-output) ')
-waits_ok=0; { [ "$bare" = 0 ] && [ "$waits" = 0 ]; } || waits_ok=1; check "no bare wait or follow-up wait" "$waits_ok" "bare=$bare waits=$waits"
-after=$(awk '/^herdr agent prompt /{f=1; next} f && /^herdr (agent (read|get|wait)|pane (read|wait-output)) /{n++} END{print n+0}' "$herdr_log")
-polling_ok=0; [ "$after" = 0 ] || polling_ok=1; check "no polling after prompt" "$polling_ok" "polling_after_prompt=$after"
+bare=$(grep -E '^herdr agent prompt ' "$herdr_log" | grep -- '--wait' | grep -vc -- '--until' || true); pane_waits=$(count '^herdr pane wait-output ')
+waits_ok=0; { [ "$bare" = 0 ] && [ "$pane_waits" = 0 ]; } || waits_ok=1; check "no bare prompt wait or pane wait-output" "$waits_ok" "bare=$bare pane_waits=$pane_waits"
+# The skill's tracked background wait: exactly one `agent wait NAME --until done`, issued after the prompt. Any other wait, and any read/get, is polling.
+tracked=$(awk -v n="$started_name" '/^herdr agent prompt /{f=1; next} f && $1=="herdr" && $2=="agent" && $3=="wait" && $4==n && /--until done/{c++} END{print c+0}' "$herdr_log")
+all_agent_waits=$(count '^herdr agent wait ')
+tracked_ok=0; { [ "$tracked" = 1 ] && [ "$all_agent_waits" = 1 ]; } || tracked_ok=1; check "exactly one tracked wait: agent wait NAME --until done, after the prompt" "$tracked_ok" "tracked=$tracked agent_waits=$all_agent_waits"
+after=$(awk '/^herdr agent prompt /{f=1; next} f && /^herdr (agent (read|get)|pane (read|wait-output)) /{n++} END{print n+0}' "$herdr_log")
+polling_ok=0; [ "$after" = 0 ] || polling_ok=1; check "no read/get polling after prompt" "$polling_ok" "polling_after_prompt=$after"
 count_ok=0; [ "$(cat "$state/prompt_count" 2>/dev/null || echo 0)" = 1 ] || count_ok=1; check "prompt sent once" "$count_ok" "$(cat "$state/prompt_count" 2>/dev/null || echo 0)"
 ! grep -qi -E 'dangerously|skip-permissions|--yes|auto-approve|yolo' <<<"$start_line"; bypass_ok=$?; check "no permission-bypass flag" "$bypass_ok" "$start_line"
 if [ "$case_name" = branch-pi ]; then

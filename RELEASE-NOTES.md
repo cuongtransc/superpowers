@@ -1,5 +1,35 @@
 # Superpowers Release Notes
 
+## v6.4.26 (2026-10-16)
+
+Fork-only. Nothing ported from cuongnbms or obra; it ships PR #5 and a grader fix.
+
+### SDD In New Session
+
+- **One tracked background wait after dispatch** (PR #5, 0c229bf). After the handoff the session starts exactly one harness-tracked wait (`cta lane wait <lane_id>` on the cta path, `herdr agent wait NAME --until done` on the Herdr fallback) and reports when it returns; no polling loops, no time estimates.
+- **Eval grader fix** (`evals/grade.sh`, `evals/README.md`). The v6.4.25 grader failed any `herdr agent wait` and any agent read/get/wait after the prompt, so it rejected the behaviour above. Now it allows exactly one `herdr agent wait <NAME> --until done` for the started agent issued after the `agent prompt`, and still fails bare `--wait` on the prompt, `pane wait-output`, a second `agent wait`, and `agent read`/`get`/`pane read` after the prompt. On the cta path (`cta-lane`, `cta-pi`) it requires one `cta lane wait lane-sdd-...` after the dispatch, and `cta-lane`'s "only allowed cta calls" check no longer counts that wait as a stray call.
+
+### Writing Plans
+
+- A commit step after a generator lists every file the generator writes (PR #5, 5390254). Text only; no eval covers it.
+
+### Evidence
+
+Fresh sonnet executor per case, new skill text, `grade.sh` from this release (passed/failed checks):
+
+| Case | New grader | Old grader (v6.4.25) |
+|---|---|---|
+| `worktree` (id 0) | PASS 20/0 | FAIL 17/2 (wait, polling) |
+| `branch-pi` (id 1) | PASS 21/0 | FAIL 18/2 (wait, polling) |
+| `collision` (id 2) | FAIL 19/3 | not run |
+| `pane` (id 3) | FAIL 18/1, rerun FAIL 17/2 | not run |
+| `cta-lane` (id 4) | PASS 9/0 | FAIL 7/1 (wait counted as stray call) |
+| `cta-pi` (id 9) | PASS 4/0 | not run |
+
+Failures are executor behaviour, not grader: in `pane` both executors opened a tab although `SUPERPOWERS_SDD_LAYOUT=pane` was set (rerun also reported `/tmp/...` instead of the resolved `/private/tmp/...` plan path); in `collision` the executor sent a prompt to the agent whose start had been rejected before retrying with `-2`, and reported the plan under `/tmp/...`. Not yet checked against the v6.4.25 skill text, so whether these predate PR #5 is open.
+
+Suites: `test-sdd-workspace.sh` PASS (exit 0), `test-task-brief.sh` PASS (exit 0), `tests/version-bump/*.sh` exit 0 and 0; `bump-version.sh --audit` all clear. `shellcheck grade.sh`: one pre-existing SC2016 info.
+
 ## v6.4.25 (2026-10-03)
 
 Fork-only. No upstream porting this release (nothing taken from cuongnbms or obra); it ships the fork's own `sdd-in-new-session` change from PR #3.
