@@ -174,6 +174,12 @@ makes it unambiguous and nothing more:
   tests do not determine, or for exact copy the spec fixes.
 - **A verification step:** the command to run and the output that means it
   passed.
+- **A commit step after a generator** (codegen, screenshot or doc renderer,
+  a formatter that rewrites files): every file the generator writes, read from
+  its script or task definition, not guessed; or tell the implementer to run
+  `git status` after it and add everything it changed. A plan whose `git add`
+  listed only `docs/design` missed the README screenshots `mise run docs:ui-map`
+  also rewrites, and cost a fix round.
 - **A reference to another task:** that task's Interfaces block says what
   to use; the plan does not repeat that task's code. "Similar to Task N"
   fails for the same reason: they cannot see Task N.
