@@ -1,5 +1,24 @@
 # Superpowers Release Notes
 
+## v6.4.27 (2026-10-29)
+
+Fork-only. Nothing ported from cuongnbms or obra; it ships PR #7.
+
+### Using Git Worktrees
+
+- **One call when a `WorktreeCreate` hook is configured** (PR #7, 707742d). In Claude Code the skill first checks the user and project settings for a `WorktreeCreate` hook. With one, `EnterWorktree` + name creates and enters the worktree, and 1a/1b are skipped: the hook owns location, base and ignore. Without one, the existing path stays: `git worktree add` at `.worktrees/<branch>`, then `EnterWorktree` + `path`. Why: entering a git-made worktree by `path` asks the human to approve a "permission-root relocation" on every run, and an allow rule for `EnterWorktree` does not remove that prompt. A hook-created worktree enters without it.
+
+### Evidence
+
+- `tests/claude-code/test-worktree-standard-location.sh static`: two new assertions, red before the change, 8/8 green after.
+- `test-worktree-path-policy.sh`, `test-sdd-workspace.sh`, `tests/version-bump/*.sh` green.
+- The detection snippet run for real: it prints the configured hook and stays silent without one. With a hook that creates at `.worktrees/<branch>` from HEAD, `EnterWorktree name=…` entered without a prompt.
+- Not run: the model phases (`standard`, `pressure`) of the standard-location test. On a machine with the hook the agent correctly takes `EnterWorktree` + name, which those phases count as a fail, so they need a HOME without the hook. `using-git-worktrees` has no `evals/`.
+
+### Not taken
+
+- cnb `main`/`dev` through v6.4.30 (brainstorming spec reviewer, show-me standalone pages, todo-tracking removal, SDD model aliases) and obra after v6.4.2 (latest v7.0.1): not reviewed for this release; a separate port round.
+
 ## v6.4.26 (2026-10-16)
 
 Fork-only. Nothing ported from cuongnbms or obra; it ships PR #5 and a grader fix.
