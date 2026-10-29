@@ -58,6 +58,10 @@ static_checks() {
     assert_contains "$text" 'call `EnterWorktree` with `path`' "skill enters an existing worktree by path on Claude Code" || rc=1
     assert_contains "$text" 'never create with `EnterWorktree` [+] name' "skill forbids creating with EnterWorktree" || rc=1
     assert_not_contains "$text" 'Native Worktree Tools (preferred)' "skill no longer prefers native creation" || rc=1
+    # Entering a git-made worktree by path asks "permission-root relocation" on every run; a
+    # WorktreeCreate hook that creates at the standard path lets EnterWorktree + name do both.
+    assert_contains "$text" "jq -e '.hooks.WorktreeCreate | length > 0'" "skill detects a WorktreeCreate hook" || rc=1
+    assert_contains "$text" 'With a `WorktreeCreate` hook, call `EnterWorktree` with `name`' "skill creates through the hook when one is configured" || rc=1
     return $rc
 }
 

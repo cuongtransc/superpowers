@@ -63,9 +63,19 @@ Then stop (isolating) or continue to Step 2 (preparing). If the answer is a work
 
 Two parts, in this order: create with git, then enter.
 
+**Claude Code with a `WorktreeCreate` hook: one call instead.** Check for the hook first:
+
+```bash
+for f in ~/.claude/settings.json .claude/settings.json .claude/settings.local.json; do
+  [ -f "$f" ] && jq -e '.hooks.WorktreeCreate | length > 0' "$f" >/dev/null && echo "WorktreeCreate hook: $f"
+done
+```
+
+With a `WorktreeCreate` hook, call `EnterWorktree` with `name` set to the branch name and skip 1a and 1b: the hook owns creation (location, base, ignore) and the session enters what it made. Entering a git-made worktree by `path` instead asks your human partner to approve a "permission-root relocation" on every run; a hook-created worktree does not. No hook, or another harness: 1a and 1b.
+
 ### 1a. Create the worktree with git
 
-The worktree is created with `git worktree add`, whatever harness you run in. A native creation tool (Claude Code's `EnterWorktree` with a name, `WorktreeCreate`, `/worktree`) puts the worktree in a harness-specific directory, branches from the remote default branch rather than from here, and ties cleanup to the session that created it. None of that survives a handoff to another agent, and finishing-a-development-branch does not own that directory.
+The worktree is created with `git worktree add`, whatever harness you run in. A native creation tool with no `WorktreeCreate` hook behind it (Claude Code's `EnterWorktree` with a name, `/worktree`) puts the worktree in a harness-specific directory, branches from the remote default branch rather than from here, and ties cleanup to the session that created it. None of that survives a handoff to another agent, and finishing-a-development-branch does not own that directory.
 
 #### Directory Selection
 
@@ -166,7 +176,8 @@ Ready to implement <feature-name>
 | Answer: branch in this checkout | `git switch -c`, no worktree |
 | Answer: stay on main/master | That is the consent execution skills need; record it |
 | Answer: worktree | `git worktree add` at the standard path (1a), then enter (1b) |
-| Claude Code | Enter with `EnterWorktree` + `path`; never create with `EnterWorktree` + name |
+| Claude Code, `WorktreeCreate` hook configured | `EnterWorktree` + name creates and enters; skip 1a and 1b |
+| Claude Code, no hook | Enter with `EnterWorktree` + `path`; never create with `EnterWorktree` + name |
 | pi, codex, shell | `cd` into the worktree, absolute paths from then on |
 | `.worktrees/` exists | Use it (verify ignored) |
 | `worktrees/` exists | Use it (verify ignored) |
@@ -183,7 +194,7 @@ Ready to implement <feature-name>
 |--------|---------|
 | "I'll commit the spec here and branch off at execution time" | The spec is the feature's first commit. Committed on main it stays there if the feature is dropped. Choose the workspace before the first write. |
 | "I'm obviously not in a worktree — no need to check" | Run Step 0. Harness-created isolation and submodules both fool eyeballing; the detection commands settle it. |
-| "`EnterWorktree` with a name is one call, git is three" | That one call puts the worktree in `.claude/worktrees/`, branched from the remote default, owned by this session. The pi agent that executes the plan, and finishing-a-development-branch that cleans up, both expect `.worktrees/<branch>` from HEAD. Create with git, enter with the tool. |
+| "`EnterWorktree` with a name is one call, git is three" | That one call puts the worktree in `.claude/worktrees/`, branched from the remote default, owned by this session. The pi agent that executes the plan, and finishing-a-development-branch that cleans up, both expect `.worktrees/<branch>` from HEAD. Create with git, enter with the tool — unless a `WorktreeCreate` hook is configured, which makes the one call land there. |
 | "I `cd`-ed into the worktree, the session is there now" | In Claude Code only the shell moved. Call `EnterWorktree` with `path`, or the next `Edit` writes to the main checkout. |
 | "The worktree directory is surely ignored already" | Run `git check-ignore`. An unignored worktree directory commits the whole tree into the repo. |
 | "Any directory name works" | Explicit instructions beat an existing project-local directory, which beats the `.worktrees/` default. |
