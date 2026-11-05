@@ -1,5 +1,29 @@
 # Superpowers Release Notes
 
+## v6.4.28 (2026-11-05)
+
+Fork-only. Nothing ported from cuongnbms or obra.
+
+### Brainstorming
+
+- **Two new self-review items.** A design that redraws or replaces existing output lists every fact the old output showed and where each goes, and the spec's tests name each kept fact. A branch built on a case nobody has seen gets one real sample before approval. Source: an approval card redrawn from a better source lost the command's description and the reason for asking, for 4 days. They sit in the skill because a global instructions file was at its size budget, and the failure happens while writing a spec.
+
+### Evidence
+
+New eval case `replacement-spec-lists-what-it-drops` (id 9), sonnet, graded by hand from the written specs:
+
+| Skill | Runs | Lists the old output's facts | Tests name the kept `#id` |
+|---|---|---|---|
+| v6.4.27 | 2 | 0/2 | 0/2 |
+| First wording | 2 | 2/2 | 0/2 |
+| This wording | 2 | 2/2 | 2/2 |
+
+- The case's trap did not separate the versions: all 6 runs noticed the design dropped the `#id` that `todo done` needs. What changed is the written list and the tests.
+- 2 runs per version, below the case's `runs: 3`.
+- Not run: the 9 older brainstorming evals. None of them reaches the self-review step, read from their `expected_behavior`.
+- Not tested: item 6, unseen cases. No eval exercises it.
+- `scripts/bump-version.sh --audit`: all clear.
+
 ## v6.4.27 (2026-10-29)
 
 Fork-only. Nothing ported from cuongnbms or obra; it ships PR #7.
