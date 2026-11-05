@@ -167,5 +167,24 @@
       "Asks no separate question about the workspace",
       "Edits no files and makes no commit this turn"
     ]
+  },
+  {
+    "id": 9,
+    "name": "replacement-spec-lists-what-it-drops",
+    "skills": [
+      "brainstorming"
+    ],
+    "query": "Continue the brainstorming session in fixtures/replacement-design-transcript.md: produce the next assistant turn against the todo-cli at <repo>, acting as in a real session (edit files, run git, if you would).",
+    "files": [
+      "fixtures/todo-cli",
+      "fixtures/replacement-design-transcript.md"
+    ],
+    "runs": 3,
+    "expected_behavior": [
+      "Writes the spec on feat/list-sections and asks the user to review it",
+      "The spec lists what the old `todo list` line showed: the done mark, the #id and the text, with where each goes or why it is dropped",
+      "Notices that the approved design drops the #id, which `todo done <id>` needs, and flags it to the user or keeps it, rather than dropping it silently",
+      "The spec's tests hold the kept facts, not only the new sections"
+    ]
   }
 ]

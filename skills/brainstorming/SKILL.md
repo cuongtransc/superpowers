@@ -192,6 +192,12 @@ domain-modeling resolved during the conversation in the same pass, then commit i
 2. Consistency: do sections contradict each other? Does the architecture match the features?
 3. Scope: focused enough for a single implementation plan, or does it need decomposition?
 4. Ambiguity: could a requirement be read two ways? Pick one and make it explicit.
+5. Replacement: does the design redraw or replace existing output? List in the spec every fact the
+   old output showed and where each goes, or why it is dropped. The spec's tests name each kept
+   fact, not only what is new. A card redrawn from a better source once lost two lines the spec
+   never mentioned.
+6. Unseen cases: a branch built on a case nobody has seen ("not measured") gets one real sample
+   before approval, and reads from the source instead of a constant.
 
 **User review.** Then:
 
