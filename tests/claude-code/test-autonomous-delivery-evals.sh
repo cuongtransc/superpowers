@@ -30,6 +30,11 @@ done
 grep -q '^Autonomous delivery: source spec = source-spec/;' "$repo/CLAUDE.md" && pass "declaration" || fail "declaration"
 (cd "$repo" && python3 -m pytest -q >/dev/null 2>&1) && pass "baseline tests green" || fail "baseline tests"
 
+# --- relative DEST ---
+(cd "$TEST_ROOT" && "$EVALS/setup-case.sh" rel-case >/dev/null 2>&1 \
+  && git -C rel-case ls-remote --exit-code origin main >/dev/null 2>&1) \
+  && pass "relative DEST: origin main exists" || fail "relative DEST"
+
 # --- a done run with a correct report ---
 git -C "$repo" checkout -q -b story/STORY-001
 printf 'def count():\n    return {}\n' > "$repo/orders/count.py"

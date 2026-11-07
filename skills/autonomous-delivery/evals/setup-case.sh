@@ -9,6 +9,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 [ ! -e "$DEST" ] || { echo "setup-case.sh: $DEST already exists" >&2; exit 2; }
 
 mkdir -p "$DEST"
+DEST="$(cd "$DEST" && pwd)"
 cp -R "$HERE/fixtures/orders-cli/." "$DEST/"
 git -C "$DEST" init -q -b main
 git -C "$DEST" add -A
