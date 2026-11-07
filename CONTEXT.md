@@ -68,7 +68,7 @@ The plan workspace's `progress.md`: the controller's durable record of completed
 _Avoid_: log, progress notes
 
 **Ruling**:
-A decision the controller makes instead of asking, recorded in the ledger with its reason and its cost if wrong.
+A decision the controller makes instead of asking, recorded with its reason and its cost if wrong in the ledger or, in an autonomous run, the spec's Rulings section.
 _Avoid_: assumption, judgment call, decision log entry
 
 **Stop**:
@@ -86,15 +86,15 @@ One deliverable unit named in a source spec (a backlog story, a ticket, a functi
 _Avoid_: task (a task is one step of a plan), feature, issue
 
 **Autonomous run**:
-One story taken from its source spec to an open merge request with no approval gate in between; the human partner reviews afterwards.
+One story taken from its source spec to an open pull request with no approval gate in between; the human partner reviews afterwards.
 _Avoid_: auto mode, YOLO mode, unattended mode
 
 **Batch run**:
-Several autonomous runs dispatched together, one per story, summarised as a list of merge requests and their outcomes.
+Several autonomous runs dispatched together, one per story, summarised as a list of pull requests and their outcomes.
 _Avoid_: sprint run, bulk mode
 
 **Blocking ambiguity**:
-A gap or conflict in the source spec about a business rule touching money, stock, permissions, tenancy or a migration; it ends the autonomous run for that story instead of becoming a ruling.
+A gap or conflict in the source spec about a business rule in a declared risk tier (by default money, stock, permissions, tenancy, migrations); it ends the autonomous run for that story instead of becoming a ruling.
 _Avoid_: open question, spec bug
 
 **Clarification request**:
@@ -102,5 +102,5 @@ A drafted question to the source spec's owner that records a blocking ambiguity 
 _Avoid_: Q, ticket, query
 
 **Run report**:
-The merge request description of an autonomous run: spec rules mapped to diff and tests, rulings, clarification requests, and human-only steps not done.
+The pull request (merge request on GitLab) body of an autonomous run: spec rules mapped to diff and tests, rulings, clarification requests, and human-only steps not done.
 _Avoid_: summary, completion report, status update
