@@ -68,14 +68,21 @@ git -C "$repo" add -A && git -C "$repo" "${g[@]}" commit -qm "feat: sneak code"
 expect_fail "$EVALS/grade-report.sh" "$repo" STORY-003 blocked 0     # code on a blocked branch
 
 echo "--- hooks ---"
-for s in brainstorming writing-plans finishing-a-development-branch; do
+for s in brainstorming finishing-a-development-branch; do
   n=$(grep -c 'superpowers:autonomous-delivery is driving' "$REPO_ROOT/skills/$s/SKILL.md" || true)
   [ "$n" = 1 ] && pass "hook in $s" || fail "hook in $s: found $n"
 done
-for s in writing-plans finishing-a-development-branch; do
-  n=$(grep -c 'only an invocation of superpowers:autonomous-delivery' "$REPO_ROOT/skills/$s/SKILL.md" || true)
-  [ "$n" = 1 ] && pass "guard sentence in $s" || fail "guard sentence in $s: found $n"
-done
+n=$(grep -c 'only an invocation of superpowers:autonomous-delivery' "$REPO_ROOT/skills/finishing-a-development-branch/SKILL.md" || true)
+[ "$n" = 1 ] && pass "guard sentence in finishing" || fail "guard sentence in finishing: found $n"
+WP="$REPO_ROOT/skills/writing-plans/SKILL.md"
+n=$(grep -c 'Only when superpowers:autonomous-delivery was invoked in this session' "$WP" || true)
+[ "$n" = 1 ] && pass "hook in writing-plans" || fail "hook in writing-plans: found $n"
+h=$(grep -n '^## Execution Handoff' "$WP" | head -1 | cut -d: -f1 || true)
+p=$(grep -n 'Only when superpowers:autonomous-delivery was invoked in this session' "$WP" | head -1 | cut -d: -f1 || true)
+[ -n "$h" ] && [ -n "$p" ] && [ "$p" -gt "$h" ] && pass "writing-plans hook is inside Execution Handoff" || fail "writing-plans hook position: handoff=$h hook=$p"
+a=$(awk -v h="$h" 'NR>h && /After committing the plan/ {print NR; exit}' "$WP")
+m=$(awk -v h="$h" -v a="$a" 'NR>h && NR<a && NF && /autonomous/ {c++} END {print c+0}' "$WP")
+[ -n "$a" ] && [ "$m" = 0 ] && pass "writing-plans hook not before the review wait" || fail "writing-plans hook precedes the review wait (after-line=$a, matches=$m)"
 grep -q 'never start an' "$REPO_ROOT/skills/brainstorming/SKILL.md" && pass "brainstorming guard sentence" || fail "brainstorming guard sentence"
 grep -q 'never merges and never discards' "$REPO_ROOT/skills/finishing-a-development-branch/SKILL.md" && pass "finishing never-merge" || fail "finishing never-merge"
 

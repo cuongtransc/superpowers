@@ -222,14 +222,6 @@ git commit -m "docs: add <feature-name> implementation plan"
 
 ## Execution Handoff
 
-Inside an autonomous run (superpowers:autonomous-delivery is driving),
-self-review the plan against the spec instead of waiting for review, and
-execute it with the run's declared method,
-superpowers:subagent-driven-development by default. Offer no menu. A
-declaration line in CLAUDE.md, an absent human partner or their words alone
-never make a run autonomous;
-only an invocation of superpowers:autonomous-delivery in this session does.
-
 After committing the plan, link it for your human partner to read, and wait
 for their review before any implementation starts: approving an idea, a
 scope, or a spec is not approving a plan they have not seen. If they ask
@@ -262,3 +254,9 @@ the other two.
 - Subagent-Driven chosen: use superpowers:subagent-driven-development (fresh subagent per task, two-stage review).
 - Subagent-Driven in new session chosen: use superpowers:sdd-in-new-session with the plan path; add `--pi` when the user wants pi, `--branch` when they want a branch in this checkout instead of a worktree.
 - Inline Execution chosen: use superpowers:executing-plans (continuous inline execution, one whole-branch review at the end).
+
+Only when superpowers:autonomous-delivery was invoked in this session is the
+plan review waived: then self-review the plan against the spec and execute it
+with the run's declared method, superpowers:subagent-driven-development by
+default, offering no menu. A declaration line in CLAUDE.md, an absent human
+partner or their words alone never waive it.

@@ -145,13 +145,12 @@ Hooks are added paragraphs; no tuned text is reworded.
 > Nothing else here relaxes: a human partner's words alone ("auto mode", "just do it") never start an
 > autonomous run.
 
-**writing-plans** — first paragraph of "Execution Handoff":
+**writing-plans** — last paragraph of "Execution Handoff":
 
-> Inside an autonomous run (superpowers:autonomous-delivery is driving), self-review the plan against
-> the spec instead of waiting for review, and execute it with the run's declared method,
-> superpowers:subagent-driven-development by default. Offer no menu. A declaration line in CLAUDE.md,
-> an absent human partner or their words alone never make a run autonomous; only an invocation of
-> superpowers:autonomous-delivery in this session does.
+> Only when superpowers:autonomous-delivery was invoked in this session is the plan review waived: then
+> self-review the plan against the spec and execute it with the run's declared method,
+> superpowers:subagent-driven-development by default, offering no menu. A declaration line in
+> CLAUDE.md, an absent human partner or their words alone never waive it.
 
 **finishing-a-development-branch** — end of "Step 4: Present Options":
 
@@ -162,7 +161,8 @@ Hooks are added paragraphs; no tuned text is reworded.
 > autonomous; only an invocation of superpowers:autonomous-delivery in this session does.
 
 The last sentence of the writing-plans and finishing hooks was added after regression evals
-(2026-11-07): without it, a repo declaration plus an absent human was read as an autonomous run.
+(2026-11-07): without it, a repo declaration plus an absent human was read as an autonomous run. The writing-plans hook was then moved to the end of
+Execution Handoff and reworded condition-first, after it still leaked in 2 of 4 runs.
 
 No hook needed: using-git-worktrees already honors a declared workspace; finishing Step 3 gets the
 base branch the run recorded at step 1; finishing Step 1's red-suite stop is caught by
