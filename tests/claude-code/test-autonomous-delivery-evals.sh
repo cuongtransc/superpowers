@@ -79,5 +79,17 @@ n=$(grep -c 'autonomous' "$REPO_ROOT/skills/writing-plans/SKILL.md" || true)
 grep -q 'never start an' "$REPO_ROOT/skills/brainstorming/SKILL.md" && pass "brainstorming guard sentence" || fail "brainstorming guard sentence"
 grep -q 'never merges and never discards' "$REPO_ROOT/skills/finishing-a-development-branch/SKILL.md" && pass "finishing never-merge" || fail "finishing never-merge"
 
+echo "--- skill ---"
+SK="$REPO_ROOT/skills/autonomous-delivery"
+head -4 "$SK/SKILL.md" | grep -q '^name: autonomous-delivery$' && pass "frontmatter name" || fail "frontmatter name"
+head -4 "$SK/SKILL.md" | grep -q '^description: .*Use when' && pass "description has Use when" || fail "description"
+for t in "Outcome: done" "Outcome: blocked" "Outcome: failed" ".superpowers/autonomous/" "Red Flags" "run-report.md"; do
+  grep -qF "$t" "$SK/SKILL.md" && pass "SKILL.md mentions $t" || fail "SKILL.md lacks $t"
+done
+for h in "### 1. Rules → evidence" "### 2. Rulings" "### 3. Clarification requests" "### 4. Human-only steps" "### 5. Verification" "### 6. Review first"; do
+  grep -qF "$h" "$SK/run-report.md" && pass "template: $h" || fail "template lacks $h"
+done
+grep -q '\*\*autonomous-delivery\*\*' "$REPO_ROOT/README.md" && pass "README lists it" || fail "README lists it"
+
 echo
 [ "$FAILURES" -eq 0 ] && { echo "All tests passed"; exit 0; } || { echo "$FAILURES failure(s)"; exit 1; }
