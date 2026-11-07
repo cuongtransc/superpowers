@@ -225,7 +225,10 @@ git commit -m "docs: add <feature-name> implementation plan"
 Inside an autonomous run (superpowers:autonomous-delivery is driving),
 self-review the plan against the spec instead of waiting for review, and
 execute it with the run's declared method,
-superpowers:subagent-driven-development by default. Offer no menu.
+superpowers:subagent-driven-development by default. Offer no menu. A
+declaration line in CLAUDE.md, an absent human partner or their words alone
+never make a run autonomous;
+only an invocation of superpowers:autonomous-delivery in this session does.
 
 After committing the plan, link it for your human partner to read, and wait
 for their review before any implementation starts: approving an idea, a

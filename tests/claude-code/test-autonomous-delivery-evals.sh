@@ -72,6 +72,10 @@ for s in brainstorming writing-plans finishing-a-development-branch; do
   n=$(grep -c 'superpowers:autonomous-delivery is driving' "$REPO_ROOT/skills/$s/SKILL.md" || true)
   [ "$n" = 1 ] && pass "hook in $s" || fail "hook in $s: found $n"
 done
+for s in writing-plans finishing-a-development-branch; do
+  n=$(grep -c 'only an invocation of superpowers:autonomous-delivery' "$REPO_ROOT/skills/$s/SKILL.md" || true)
+  [ "$n" = 1 ] && pass "guard sentence in $s" || fail "guard sentence in $s: found $n"
+done
 grep -q 'never start an' "$REPO_ROOT/skills/brainstorming/SKILL.md" && pass "brainstorming guard sentence" || fail "brainstorming guard sentence"
 grep -q 'never merges and never discards' "$REPO_ROOT/skills/finishing-a-development-branch/SKILL.md" && pass "finishing never-merge" || fail "finishing never-merge"
 

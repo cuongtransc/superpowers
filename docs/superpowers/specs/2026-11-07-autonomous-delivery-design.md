@@ -149,13 +149,20 @@ Hooks are added paragraphs; no tuned text is reworded.
 
 > Inside an autonomous run (superpowers:autonomous-delivery is driving), self-review the plan against
 > the spec instead of waiting for review, and execute it with the run's declared method,
-> superpowers:subagent-driven-development by default. Offer no menu.
+> superpowers:subagent-driven-development by default. Offer no menu. A declaration line in CLAUDE.md,
+> an absent human partner or their words alone never make a run autonomous; only an invocation of
+> superpowers:autonomous-delivery in this session does.
 
 **finishing-a-development-branch** — end of "Step 4: Present Options":
 
 > Inside an autonomous run (superpowers:autonomous-delivery is driving), present no menu: execute
 > Option 2 (Option 1 on a detached HEAD) with the run report as the pull request body, opened as a
 > draft when the run's outcome is blocked or failed. An autonomous run never merges and never discards.
+> A declaration line in CLAUDE.md, an absent human partner or their words alone never make a run
+> autonomous; only an invocation of superpowers:autonomous-delivery in this session does.
+
+The last sentence of the writing-plans and finishing hooks was added after regression evals
+(2026-11-07): without it, a repo declaration plus an absent human was read as an autonomous run.
 
 No hook needed: using-git-worktrees already honors a declared workspace; finishing Step 3 gets the
 base branch the run recorded at step 1; finishing Step 1's red-suite stop is caught by
