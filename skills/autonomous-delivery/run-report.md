@@ -38,7 +38,7 @@ Source: <source spec link/path> · Spec: <path> · Plan: <path>
 
 - **One row per rule.** Every rule from the step-2 rule list has exactly one row, ids `R1`…`Rn` in rule-list order, each row starting `| R<n> |`. No evidence means `not implemented — <reason>`; never drop a row.
 - **Code cell.** Bare `path:line` entries, comma-separated, no backticks, no ranges (`a.py:3-9` is wrong; write each line you cite). `–` when there is none. Every entry must be a line added in `git diff <base>...HEAD`, where `<base>` is the base branch recorded at step 1. Check each entry against the diff when you write the report.
-- **Test cell.** Every test id must appear in the CI output of this run. Check it when you write the report.
+- **Test cell.** Every test id appears in the output of this run's test suite (re-run it verbosely if the CI gate prints no ids). Check it when you write the report.
 - **Rulings** are the union of the spec's Rulings section and the ledger's `Ruling:` lines, including `departs from spec` rulings, ordered by cost if wrong.
 - **Human-at-screen steps** are first attempted with the next available tool (built-in or automated browser, event logging). List only what truly needs a person, never as a "known limitation".
 - **Build the report from data**, not memory: the rule list, `git diff <base>...HEAD`, the ledger, the spec's Rulings section, the CI output.

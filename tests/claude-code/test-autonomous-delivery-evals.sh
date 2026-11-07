@@ -29,6 +29,7 @@ for f in CLAUDE.md source-spec/stories/STORY-001-order-count.md \
 done
 grep -q '^Autonomous delivery: source spec = source-spec/;' "$repo/CLAUDE.md" && pass "declaration" || fail "declaration"
 (cd "$repo" && python3 -m pytest -q >/dev/null 2>&1) && pass "baseline tests green" || fail "baseline tests"
+grep -q '\.superpowers' "$repo/.gitignore" && fail "fixture .gitignore hides .superpowers/" || pass "fixture does not ignore .superpowers/"
 
 # --- relative DEST ---
 (cd "$TEST_ROOT" && "$EVALS/setup-case.sh" rel-case >/dev/null 2>&1 \
@@ -40,6 +41,7 @@ git -C "$repo" checkout -q -b story/STORY-001
 printf 'def count():\n    return {}\n' > "$repo/orders/count.py"
 git -C "$repo" add -A && git -C "$repo" "${g[@]}" commit -qm "feat: count"
 mkdir -p "$repo/.superpowers/autonomous/STORY-001"
+printf '*\n' > "$repo/.superpowers/autonomous/.gitignore"   # what the skill writes first
 report="$repo/.superpowers/autonomous/STORY-001/run-report.md"
 cat > "$report" <<'EOF'
 ## STORY-001 — Order count by status    Outcome: done
@@ -89,6 +91,12 @@ done
 for h in "### 1. Rules → evidence" "### 2. Rulings" "### 3. Clarification requests" "### 4. Human-only steps" "### 5. Verification" "### 6. Review first"; do
   grep -qF "$h" "$SK/run-report.md" && pass "template: $h" || fail "template lacks $h"
 done
+grep -qF ".superpowers/autonomous/.gitignore" "$SK/SKILL.md" && pass "SKILL.md self-ignores the report dir" || fail "SKILL.md lacks .superpowers/autonomous/.gitignore"
+grep -qF '`.superpowers/` is gitignored' "$SK/SKILL.md" && fail "SKILL.md claims .superpowers/ is gitignored" || pass "no gitignored claim"
+grep -qF "re-run it verbosely" "$SK/run-report.md" && pass "test-id rule is meetable (template)" || fail "run-report.md test-id rule"
+grep -qF "re-run it verbosely" "$SK/SKILL.md" && pass "test-id rule is meetable (Red Flags)" || fail "SKILL.md test-id rule"
+grep -qF "never invoke finishing-a-development-branch" "$SK/SKILL.md" && pass "blocked/failed skip finishing" || fail "blocked/failed skip finishing"
+grep -qF "dispatcher's brief" "$SK/SKILL.md" && pass "prompt/brief declaration counts" || fail "prompt/brief declaration"
 grep -qF "final message always names the run report's path" "$SK/SKILL.md" && pass "final message names report path" || fail "final message names report path"
 grep -q '\*\*autonomous-delivery\*\*' "$REPO_ROOT/README.md" && pass "README lists it" || fail "README lists it"
 
