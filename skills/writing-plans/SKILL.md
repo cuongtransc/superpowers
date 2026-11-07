@@ -222,6 +222,11 @@ git commit -m "docs: add <feature-name> implementation plan"
 
 ## Execution Handoff
 
+Inside an autonomous run (superpowers:autonomous-delivery is driving),
+self-review the plan against the spec instead of waiting for review, and
+execute it with the run's declared method,
+superpowers:subagent-driven-development by default. Offer no menu.
+
 After committing the plan, link it for your human partner to read, and wait
 for their review before any implementation starts: approving an idea, a
 scope, or a spec is not approving a plan they have not seen. If they ask

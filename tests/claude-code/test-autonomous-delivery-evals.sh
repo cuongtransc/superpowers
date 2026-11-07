@@ -67,5 +67,13 @@ echo "x = 1" >> "$repo/orders/store.py"
 git -C "$repo" add -A && git -C "$repo" "${g[@]}" commit -qm "feat: sneak code"
 expect_fail "$EVALS/grade-report.sh" "$repo" STORY-003 blocked 0     # code on a blocked branch
 
+echo "--- hooks ---"
+for s in brainstorming writing-plans finishing-a-development-branch; do
+  n=$(grep -c 'superpowers:autonomous-delivery is driving' "$REPO_ROOT/skills/$s/SKILL.md" || true)
+  [ "$n" = 1 ] && pass "hook in $s" || fail "hook in $s: found $n"
+done
+grep -q 'never start an' "$REPO_ROOT/skills/brainstorming/SKILL.md" && pass "brainstorming guard sentence" || fail "brainstorming guard sentence"
+grep -q 'never merges and never discards' "$REPO_ROOT/skills/finishing-a-development-branch/SKILL.md" && pass "finishing never-merge" || fail "finishing never-merge"
+
 echo
 [ "$FAILURES" -eq 0 ] && { echo "All tests passed"; exit 0; } || { echo "$FAILURES failure(s)"; exit 1; }
