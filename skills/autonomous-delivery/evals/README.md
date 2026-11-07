@@ -19,6 +19,19 @@ skills/autonomous-delivery/evals/setup-case.sh <dest>
 
 Creates a git repo at `<dest>` on `main` (one commit, `chore: orders-cli baseline`) with a bare remote at `<dest>.remote.git`. Keep `<dest>` outside the repo, in the eval workspace.
 
+### Case 5 setup (guard-finishing)
+
+After `setup-case.sh <dest>`, add the finished `feat/count` branch:
+
+```bash
+cd <dest>
+git checkout -q -b feat/count
+printf 'def count():\n    return 6\n' > orders/count.py
+printf 'from orders.count import count\n\ndef test_count():\n    assert count() == 6\n' > tests/test_count.py
+git add -A
+git -c user.email=eval@example.com -c user.name=eval -c commit.gpgsign=false commit -qm "feat: count"
+```
+
 ## Grade a run
 
 ```bash
