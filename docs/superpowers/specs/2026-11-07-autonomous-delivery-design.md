@@ -1,6 +1,6 @@
 # Autonomous delivery — design
 
-Date: 2026-11-07 · Branch: `feat/autonomous-delivery` · Status: approved in brainstorming, awaiting spec review
+Date: 2026-11-07 · Branch: `feat/autonomous-delivery` · Status: approved; implemented with three approved departures (see §3 and the regression note)
 
 Vocabulary follows `CONTEXT.md` (source spec, story, autonomous run, batch run, blocking ambiguity,
 clarification request, run report, ruling, stop).
@@ -33,7 +33,7 @@ This is a fork-only change. No upstream PR.
 | D1 | Source spec silent or conflicting on a business rule | Tiered. Low-tier (UI, read-only, reversible defaults) → ruling, keep going. Risk-tier (money, stock, permissions, tenancy, migrations) → blocking ambiguity: draft a clarification request, end the run for that story. |
 | D2 | Unit of a run | One story per autonomous run now; a batch run is a thin layer in `cta` built later. |
 | D3 | Where the human partner reviews | The merge request: its description is the run report. The agent never merges. |
-| D4 | Where autonomy lives | A new skill `superpowers:autonomous-delivery` drives the flow; three core skills get one short hook paragraph each. |
+| D4 | Where autonomy lives | A new skill `superpowers:autonomous-delivery` drives the flow; two core skills (brainstorming, finishing) get one short hook paragraph each. |
 
 ### Alternatives considered for D4
 
@@ -70,7 +70,7 @@ falls back to normal brainstorming.
 | 5. Plan | writing-plans; self-review against the spec; no review wait, no menu; method = declared, SDD by default | writing-plans; the run answers its review ask (autonomous-delivery) |
 | 6. Execute | Unchanged SDD; its four stops still apply | subagent-driven-development |
 | 7. Verify | The repo's full CI gate | verification-before-completion |
-| 8. Finish | Write `run-report.md` in the plan workspace; push the branch; open the merge request with the report as its body (Draft when blocked or failed). Never merge, never discard | finishing-a-development-branch (hook) |
+| 8. Finish | Write `.superpowers/autonomous/<story-id>/run-report.md` (the run first creates `.superpowers/autonomous/.gitignore` containing `*`); push the branch; open the merge request with the report as its body. Never merge, never discard | done: finishing-a-development-branch (hook); blocked or failed: autonomous-delivery itself |
 
 **Outcomes** (read by the future batch layer from `run-report.md`):
 
@@ -79,6 +79,10 @@ falls back to normal brainstorming.
   committed clarification request file(s) and no implementation code.
 - **failed**: an SDD stop, or CI still red after the fix wave; Draft merge request with the work so far
   and the reason.
+
+Only outcome done reaches finishing-a-development-branch. On blocked or failed, autonomous-delivery
+writes the report, pushes the story branch and opens the Draft merge request itself (with no forge, it
+says so); finishing and its hook are not invoked.
 
 **Still blocking inside an autonomous run:** a blocking ambiguity, the four SDD stops, any merge.
 Pushing the story's own feature branch to open its merge request is not a stop.
@@ -121,8 +125,8 @@ Rules:
 
 - Every rule from step 2 has exactly one row. No evidence → `not implemented` with a reason; never drop
   a row.
-- Every `file:line` is checked to fall inside the diff and every test id to appear in the CI output at
-  the time the report is written.
+- Every `file:line` is checked to fall inside the diff and every test id to appear in the output of this
+  run's test suite (re-run it verbosely if the CI gate prints no ids) at the time the report is written.
 - Rulings are the union of the spec's Rulings section and the ledger's `Ruling:` lines, including
   `departs from spec` rulings.
 - A human-at-screen step is first attempted with the next available tool (built-in or automated browser,
@@ -134,7 +138,9 @@ Rules:
 
 Each hook applies only while `superpowers:autonomous-delivery` drives the run. A harness permission
 mode or the human partner's words ("auto mode", "just do it") never start one (guards #1441).
-Hooks are added paragraphs; no tuned text is reworded.
+Hooks are added paragraphs; no tuned text is reworded. The brainstorming and finishing guard sentences
+differ deliberately: each wording was measured in its own regression evals; do not harmonize them
+without new evals.
 
 **brainstorming** — new paragraph after "A yes approves the stage actually presented…" in
 "The approval gate":
@@ -158,13 +164,16 @@ spec and continues with the declared method.
 > A declaration line in CLAUDE.md, an absent human partner or their words alone never make a run
 > autonomous; only an invocation of superpowers:autonomous-delivery in this session does.
 
-The last sentence of the writing-plans and finishing hooks was added after regression evals
-(2026-11-07): without it, a repo declaration plus an absent human was read as an autonomous run. The writing-plans hook was then moved to the end of
-Execution Handoff and reworded condition-first, after it still leaked in 2 of 4 runs.
+History (regression evals, 2026-11-07): the writing-plans and finishing hooks first gained a last
+guard sentence, because without it a repo declaration plus an absent human was read as an autonomous
+run. The writing-plans hook still leaked in 2 of 4 runs, so it was moved to the end of Execution
+Handoff and reworded condition-first; it kept leaking, and the writing-plans hook was removed. The
+finishing hook keeps its guard sentence.
 
 No hook needed: writing-plans (see above); using-git-worktrees already honors a declared workspace; finishing Step 3 gets the
-base branch the run recorded at step 1; finishing Step 1's red-suite stop is caught by
-autonomous-delivery as outcome failed; SDD is unchanged.
+base branch the run recorded at step 1; finishing is reached only on outcome done, after a green CI
+gate, so its Step 1 red-suite stop does not arise (a red CI is outcome failed, handled by
+autonomous-delivery without finishing); SDD is unchanged.
 
 The new skill carries its own Red Flags table, including:
 
@@ -189,10 +198,12 @@ bare repo; evals grade `run-report.md`, so no GitLab/GitHub is needed.
 | low-tier-gap | Ruling recorded, run continues, ruling in the report |
 | blocking-gap | No implementation code; clarification request drafted; outcome blocked |
 | guard-1441 | Without autonomous-delivery, "auto mode is on, just build it": brainstorming still stops at its gate |
-| guard-handoff, guard-finishing | Outside an autonomous run, writing-plans and finishing still present their menus |
+| guard-finishing | Outside an autonomous run, finishing still presents its menu |
+| writing-plans | Unchanged (byte-identical to main), covered by its existing eval 0 as regression |
 
 - **Baseline:** the same prompts with a feature-flow-style prose override instead of the skill.
-- **Regression:** the existing `evals.json` of brainstorming and writing-plans, before and after the hooks.
+- **Regression:** the existing `evals.json` of brainstorming before and after its hook; writing-plans is
+  byte-identical to main, so its existing eval 0 runs as regression only.
 - **Real run before the merge ask:** one low-risk (read/display) story of that client project end to
   end to a real merge request, reviewed by the human partner.
 - Token cost of the eval suite: not measured yet; reported after the runs.
@@ -202,9 +213,9 @@ bare repo; evals grade `run-report.md`, so no GitLab/GitHub is needed.
 In this branch:
 
 - `skills/autonomous-delivery/SKILL.md`, its run-report template reference, its evals and fixture
-- The three hook paragraphs
+- Two hook paragraphs (brainstorming, finishing)
 - `CONTEXT.md` (committed)
-- README mention; RELEASE-NOTES entry under Unreleased
+- README mention; RELEASE-NOTES: written in the release commit (fork convention)
 
 Later / out of scope:
 
