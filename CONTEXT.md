@@ -78,7 +78,7 @@ _Avoid_: blocker, pause, escalation
 ## Autonomous delivery
 
 **Source spec**:
-Requirements that come from outside this workflow (for example a client's Confluence synced into a specs repo) and stand as already-approved intent.
+Requirements that come from outside this workflow (for example an external requirements site synced into a specs repo) and stand as already-approved intent.
 _Avoid_: upstream spec, external doc, customer spec
 
 **Story**:
