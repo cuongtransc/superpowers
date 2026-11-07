@@ -7,11 +7,9 @@ clarification request, run report, ruling, stop).
 
 ## Problem
 
-Several projects of the human partner already carry a fairly complete source spec. Example: a
-client project whose requirements live in a separate specs repo synced from the client's wiki (BRD,
-functional designs, backlog stories, numbered decisions and clarifications). The superpowers workflow still stops at four
-approval gates per story (design, spec, plan, integration menu); in that project it produced 77
-superpowers specs re-deriving intent the source spec already fixes. The human partner wants the agent
+Several projects of the human partner already carry a fairly complete source spec. The superpowers
+workflow still stops at four approval gates per story (design, spec, plan, integration menu),
+re-deriving intent the source spec already fixes. The human partner wants the agent
 to decide and deliver on its own, following best practice and industry standards, and reviews the
 result afterwards.
 
