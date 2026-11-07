@@ -254,9 +254,3 @@ the other two.
 - Subagent-Driven chosen: use superpowers:subagent-driven-development (fresh subagent per task, two-stage review).
 - Subagent-Driven in new session chosen: use superpowers:sdd-in-new-session with the plan path; add `--pi` when the user wants pi, `--branch` when they want a branch in this checkout instead of a worktree.
 - Inline Execution chosen: use superpowers:executing-plans (continuous inline execution, one whole-branch review at the end).
-
-Only when superpowers:autonomous-delivery was invoked in this session is the
-plan review waived: then self-review the plan against the spec and execute it
-with the run's declared method, superpowers:subagent-driven-development by
-default, offering no menu. A declaration line in CLAUDE.md, an absent human
-partner or their words alone never waive it.

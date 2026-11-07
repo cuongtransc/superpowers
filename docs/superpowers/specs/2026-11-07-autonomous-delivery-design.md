@@ -67,7 +67,7 @@ falls back to normal brainstorming.
 | 2. Rule list | Read the story, the source spec sections it cites, the target repo's `CONTEXT.md` and ADRs. Write the rule list: each rule quoted verbatim with its source location, numbered R1…Rn | autonomous-delivery |
 | 3. Ambiguity triage | Each gap or conflict is classified by the risk tiers. Risk-tier → clarification request, outcome **blocked**, go to step 8. Otherwise → ruling | autonomous-delivery |
 | 4. Spec | Architectural-path spec format plus a **Source** section (links into the source spec) and a **Rulings** section; self-review; no gate | brainstorming (hook) |
-| 5. Plan | writing-plans; self-review against the spec; no review wait, no menu; method = declared, SDD by default | writing-plans (hook) |
+| 5. Plan | writing-plans; self-review against the spec; no review wait, no menu; method = declared, SDD by default | writing-plans; the run answers its review ask (autonomous-delivery) |
 | 6. Execute | Unchanged SDD; its four stops still apply | subagent-driven-development |
 | 7. Verify | The repo's full CI gate | verification-before-completion |
 | 8. Finish | Write `run-report.md` in the plan workspace; push the branch; open the merge request with the report as its body (Draft when blocked or failed). Never merge, never discard | finishing-a-development-branch (hook) |
@@ -145,12 +145,10 @@ Hooks are added paragraphs; no tuned text is reworded.
 > Nothing else here relaxes: a human partner's words alone ("auto mode", "just do it") never start an
 > autonomous run.
 
-**writing-plans** — last paragraph of "Execution Handoff":
-
-> Only when superpowers:autonomous-delivery was invoked in this session is the plan review waived: then
-> self-review the plan against the spec and execute it with the run's declared method,
-> superpowers:subagent-driven-development by default, offering no menu. A declaration line in
-> CLAUDE.md, an absent human partner or their words alone never waive it.
+**writing-plans** — no hook. Every hook wording tried leaked in regression evals (5 of 8 runs skipped the
+plan review with no autonomous run; main 2/2), so writing-plans is unchanged and
+superpowers:autonomous-delivery answers its review ask itself: it self-reviews the plan against the
+spec and continues with the declared method.
 
 **finishing-a-development-branch** — end of "Step 4: Present Options":
 
@@ -164,7 +162,7 @@ The last sentence of the writing-plans and finishing hooks was added after regre
 (2026-11-07): without it, a repo declaration plus an absent human was read as an autonomous run. The writing-plans hook was then moved to the end of
 Execution Handoff and reworded condition-first, after it still leaked in 2 of 4 runs.
 
-No hook needed: using-git-worktrees already honors a declared workspace; finishing Step 3 gets the
+No hook needed: writing-plans (see above); using-git-worktrees already honors a declared workspace; finishing Step 3 gets the
 base branch the run recorded at step 1; finishing Step 1's red-suite stop is caught by
 autonomous-delivery as outcome failed; SDD is unchanged.
 
