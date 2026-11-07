@@ -89,6 +89,7 @@ done
 for h in "### 1. Rules → evidence" "### 2. Rulings" "### 3. Clarification requests" "### 4. Human-only steps" "### 5. Verification" "### 6. Review first"; do
   grep -qF "$h" "$SK/run-report.md" && pass "template: $h" || fail "template lacks $h"
 done
+grep -qF "final message always names the run report's path" "$SK/SKILL.md" && pass "final message names report path" || fail "final message names report path"
 grep -q '\*\*autonomous-delivery\*\*' "$REPO_ROOT/README.md" && pass "README lists it" || fail "README lists it"
 
 echo

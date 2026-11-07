@@ -62,7 +62,7 @@ The run report's header carries exactly one:
 
 Path: `.superpowers/autonomous/<story-id>/run-report.md` at the repo root of the run's workspace (`.superpowers/` is gitignored; the plan workspace may not exist yet when a run blocks at triage). Build it with `run-report.md` in this skill's directory, from data: the rule list, `git diff <base>...HEAD`, the ledger, the spec's Rulings section, the CI output. Code cells are bare `path:line` entries, comma-separated, each an added line in the diff; `–` when none. Use the report as the pull request body.
 
-When no pull request can be opened (no forge or no credentials), push the story branch anyway, keep `run-report.md`, and say in the final message that no pull request is open and why. Pushing the story branch is not a stop.
+When no pull request can be opened (no forge or no credentials), push the story branch anyway, keep `run-report.md`, and say in the final message that no pull request is open and why. The final message always names the run report's path, whether or not a pull request is open. Pushing the story branch is not a stop.
 
 ## What still stops a run
 
