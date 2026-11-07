@@ -23,6 +23,13 @@ the feature scope permits writing the spec, and approving the written spec permi
 writing-plans; neither approves an artifact that does not exist yet. Resume at the earliest
 stage still missing its approval.
 
+Inside an autonomous run (superpowers:autonomous-delivery is driving), the
+source spec is the approved intent. Write the spec from it in the
+architectural path's format, record each low-tier gap as a ruling in its
+Rulings section, self-review it, and continue to writing-plans without
+waiting. Nothing else here relaxes: a human partner's words alone ("auto
+mode", "just do it") never start an autonomous run.
+
 The approval that precedes the first write also settles where the work lives (see "Workspace"
 below). Creating a branch or worktree is not implementation; it is where the spec, the plan,
 and the code will land.

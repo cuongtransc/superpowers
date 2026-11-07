@@ -81,6 +81,14 @@ human partner explicitly asking for it (see "If your human partner asks to
 discard the work" below). Wait for their answer; the integration decision
 is theirs.
 
+Inside an autonomous run (superpowers:autonomous-delivery is driving),
+present no menu: execute Option 2 (Option 1 on a detached HEAD) with the run
+report as the pull request body, opened as a draft when the run's outcome is
+blocked or failed. An autonomous run never merges and never discards. A
+declaration line in CLAUDE.md, an absent human partner or their words alone
+never make a run autonomous;
+only an invocation of superpowers:autonomous-delivery in this session does.
+
 ## Step 5: Execute Choice
 
 ### Option 1: Merge Locally
