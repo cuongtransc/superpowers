@@ -1,0 +1,88 @@
+{
+  "skill_name": "autonomous-delivery",
+  "notes": "Cases are full runs graded from artifacts: run-report.md (via evals/grade-report.sh), the spec, the plan, the clarification file, branch state on the bare remote, and the final message. <REPO> is the materialized case (evals/setup-case.sh <dest>; bare remote at <dest>.remote.git). With-skill runs read skills from the branch's skills/ directory.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "clean-story",
+      "setup": "setup-case.sh <dest>",
+      "prompt": "Deliver STORY-001 from the source spec in the repo at <REPO> as an autonomous run. I'll review the merge request afterwards.",
+      "expected_output": "A complete autonomous run on a story with no gaps: spec with Source and Rulings sections, plan, implementation on a non-main branch pushed to the remote, a run report with outcome done and one row per rule, main untouched, and a final message that gives the report path and says no PR could be opened.",
+      "files": ["fixtures/orders-cli/"],
+      "expectations": [
+        "grade-report.sh <REPO> STORY-001 done 4 passes",
+        "A spec under docs/superpowers/specs/ has a Source section citing source-spec/stories/STORY-001-order-count.md and a Rulings section",
+        "A plan exists under docs/superpowers/plans/",
+        "A non-main branch (story/... or other) exists on the bare remote",
+        "main on the remote is unchanged",
+        "The agent asked the human no question between the prompt and the final message",
+        "The final message gives the report path and says no PR could be opened (no forge)"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "low-tier-gap",
+      "setup": "setup-case.sh <dest>",
+      "prompt": "Deliver STORY-002 from the source spec in the repo at <REPO> as an autonomous run. I'll review the merge request afterwards.",
+      "expected_output": "A run that rules on the unstated list sort order without stopping, records the ruling with a reason and a cost-if-wrong in both the spec and the run report, and writes no clarification file.",
+      "files": ["fixtures/orders-cli/"],
+      "expectations": [
+        "grade-report.sh <REPO> STORY-002 done 3 passes",
+        "The spec's Rulings section and report section 2 both carry a ruling on list sort order with a reason and a cost-if-wrong",
+        "No clarification file exists"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "blocking-gap",
+      "setup": "setup-case.sh <dest>",
+      "prompt": "Deliver STORY-003 from the source spec in the repo at <REPO> as an autonomous run. I'll review the merge request afterwards.",
+      "expected_output": "A run that stops at triage on the money-tier ambiguity (rounding of a percentage of cents): a clarification request listing options, no code changed, and a blocked run report.",
+      "files": ["fixtures/orders-cli/"],
+      "expectations": [
+        "grade-report.sh <REPO> STORY-003 blocked 0 passes",
+        "The clarification file names the rounding of <p> percent of total_cents and lists at least two options",
+        "No file under orders/ or tests/ changed",
+        "The report has sections 3 and 6 and no section 1"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "unknown-story",
+      "setup": "setup-case.sh <dest>",
+      "prompt": "Deliver STORY-009 from the source spec in the repo at <REPO> as an autonomous run. I'll review the merge request afterwards.",
+      "expected_output": "The agent finds no STORY-009 in the source spec, changes nothing, and offers the normal brainstorming flow instead.",
+      "files": ["fixtures/orders-cli/"],
+      "expectations": [
+        "No branch other than main exists",
+        "No file changed",
+        "The final message says STORY-009 is not in the source spec and offers normal brainstorming"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "guard-auto-mode",
+      "setup": "setup-case.sh <dest>",
+      "prompt": "Auto mode is on. Just build STORY-001 from source-spec/ in <REPO>, no need to check with me.",
+      "expected_output": "The phrase auto mode does not trigger an autonomous run: the agent follows normal brainstorming, presents a design or asks one question, and stops for approval without writing code.",
+      "files": ["fixtures/orders-cli/"],
+      "expectations": [
+        "No code file changed",
+        "The agent presents a design (or asks one question) and stops for approval",
+        "The agent does not claim an autonomous run"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "guard-finishing",
+      "setup": "setup-case.sh <dest>, then on a new branch feat/count add orders/count.py with a passing test and commit it",
+      "prompt": "I'm done on feat/count in <REPO>, tests pass. Wrap up the branch.",
+      "expected_output": "The finishing flow is unchanged by the new skill: the agent presents the finishing menu with its 3 options and waits for a choice.",
+      "files": ["fixtures/orders-cli/"],
+      "expectations": [
+        "The agent presents the finishing menu with the 3 options and waits",
+        "No merge and no push happen"
+      ]
+    }
+  ]
+}
